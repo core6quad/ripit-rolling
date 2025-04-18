@@ -1,0 +1,56 @@
+{
+	"name": "elv-poc",
+	"version": "1.0.0",
+	"main": "dist/main/main.js",
+	"scripts": {
+		"dev": "vite",
+		"electron-dev": "concurrently \"vite\" \"electron .\"",
+		"build": "vite build",
+		"tsc": "tsc",
+		"electron": "electron .",
+		"go": "yarn build && yarn tsc && electron .",
+		"build:e": "yarn build && tsc && electron-builder"
+	},
+	"keywords": [],
+	"author": "",
+	"license": "ISC",
+	"type": "commonjs",
+	"devDependencies": {
+		"@types/node": "^22.14.1",
+		"@vitejs/plugin-vue": "^5.2.3",
+		"@vue/cli-service": "^3.3.1",
+		"@vue/compiler-sfc": "^3.5.13",
+		"electron": "^35.1.5",
+		"electron-builder": "^26.0.12",
+		"typescript": "^5.8.3",
+		"vite": "^6.2.6",
+		"vue": "^3.5.13"
+	},
+	"build": {
+		"appId": "com.yourapp.id",
+		"productName": "ElectronVuePoC",
+		"directories": {
+			"output": "release-builds"
+		},
+		"files": [
+			"dist/**/*",
+			"package.json"
+		],
+		"win": {
+			"target": "nsis"
+		},
+		"mac": {
+			"target": "dmg"
+		},
+		"linux": {
+			"target": [
+				"AppImage",
+				"deb"
+			]
+		}
+	},
+	"dependencies": {
+		"electron-dl": "^4.0.0"
+	},
+	"description": ""
+}
