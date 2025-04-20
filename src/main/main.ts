@@ -1,14 +1,8 @@
 import { app, BrowserWindow, ipcMain, dialog, shell } from "electron";
 import * as fs from "fs";
 import * as path from "path";
-import * as electrondl from "electron-dl";
-import * as https from "https";
-import * as os from "os";
-import { spawn } from "child_process"; // Import spawn from child_process
-import * as extract from "extract-zip"; // Import extract-zip for extracting archives
 import { getFileSize } from "./handlers/file.handlers";
-import { resolveYtDlpUrl } from "./yt-dlp";
-import { downloadFile2 } from "./filedown";
+import contextMenu from 'electron-context-menu';
 
 
 app.on("ready", () => {
@@ -37,6 +31,12 @@ app.on("ready", () => {
 	// console.log("Loading file: ", indexPath));
 	mainWindow.loadFile(indexFile);
 	mainWindow.webContents.openDevTools();
+
+	contextMenu({
+		showSaveImageAs: true,
+		showCopyImage: true,
+		showInspectElement: true,
+	});
 
 	// IPC handlers
 	ipcMain.handle("file-check", getFileSize);

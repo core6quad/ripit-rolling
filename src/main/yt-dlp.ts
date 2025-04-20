@@ -12,7 +12,7 @@ export function resolveYtDlpUrl(): string {
             ytDlpUrl = RIPIT_YT_DLP_PATH_PREFIX + 'yt-dlp.exe'
             break;
 
-        case 'win32ia32':
+        case 'win32' + 'ia32':
             ytDlpUrl = RIPIT_YT_DLP_PATH_PREFIX + 'yt-dlp_win_x86.exe'
             break;
 
