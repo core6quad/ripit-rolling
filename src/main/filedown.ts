@@ -27,3 +27,39 @@ export function downloadFile(url: string, callback: (err: Error | null, data?: B
 		callback(err);
 	});
 }
+
+import { createWriteStream } from 'fs';
+import { Readable } from 'stream';
+
+export const downloadFile2 = async (url: string, outputPath: string): Promise<void> => {
+
+	const controller = new AbortController();
+	const timeout = setTimeout(() => controller.abort(), 5000);
+
+	try {
+		const response = await fetch(url);
+
+		if (!response.ok || !response.body) {
+			throw new Error(`Failed to fetch ${url}. Status: ${response.status}`);
+		}
+
+		// Web-stream в Node-stream
+		const nodeStream = Readable.fromWeb(response.body as any);
+
+		const fileStream = createWriteStream(outputPath);
+
+		await new Promise<void>((resolve, reject) => {
+			nodeStream.pipe(fileStream);
+			nodeStream.on('error', reject);
+			fileStream.on('finish', resolve);
+			fileStream.on('error', reject);
+		});
+	} catch (err) {
+		if ((err as any).name === 'AbortError') {
+			throw new Error(`Request timed out after 5000ms`);
+		}
+		throw err;
+	} finally {
+		clearTimeout(timeout); // Clean up the timeout
+	}
+};

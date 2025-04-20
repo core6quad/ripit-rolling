@@ -24,7 +24,10 @@
 		"electron-builder": "^26.0.12",
 		"typescript": "^5.8.3",
 		"vite": "^6.2.6",
-		"vue": "^3.5.13"
+		"vue": "^3.5.13",
+		"naive-ui": "^2.41.0",
+		"vue-router": "^4.5.0",
+		"electron-context-menu": "^4.0.5"
 	},
 	"build": {
 		"appId": "com.yourapp.id",
