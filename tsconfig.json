@@ -4,11 +4,15 @@
 		"module": "CommonJS", // Use CommonJS modules for Electron's main process
 		"esModuleInterop": true, // Allow compatibility between CommonJS and ES modules
 		"skipLibCheck": true, // Skip type checking of node_modules for faster builds
+		"resolveJsonModule": true,
+		"isolatedModules": true,
+		"allowSyntheticDefaultImports": true,
 		"moduleResolution": "Node", // Resolve modules like Node.js does
 		"baseUrl": ".", // Base directory for resolving paths
 		"outDir": "dist", // Output directory for compiled files
 		"rootDir": "src", // Root directory for source files,
 		"strict": false,
+		// "types": ["vite/client", "node", "vue"],
 		"paths": {
 			"@/*": [
 				"src/*"
