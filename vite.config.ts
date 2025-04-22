@@ -7,6 +7,7 @@ export default defineConfig({
 	plugins: [vue()],
 
 	build: {
+		sourcemap: true,
 		outDir: path.resolve(__dirname, "dist"), // Output directory for production build
 		emptyOutDir: true, // Clean output directory before building
 		// rollupOptions: {
