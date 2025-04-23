@@ -27,12 +27,16 @@
 		"paths": {
 			"@/*": [
 				"src/renderer/*"
+			],
+			"@shared/*": [
+				"src/shared/*"
 			]
 		},
 		"allowJs": true
 	},
 	"include": [
 		"src/renderer/**/*",
+		"src/shared/**/*",
 		// "src/renderer/declarations.d.ts"
 	],
 	"exclude": [

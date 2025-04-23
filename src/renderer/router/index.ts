@@ -3,6 +3,7 @@ import Home from '../views/Home.vue';
 import Settings from '../views/Settings.vue';
 import TaskSettings from '../views/TaskSettings.vue';
 import type { RouteRecordRaw } from 'vue-router';
+import AddSource from '../views/AddSource.vue';
 
 const routes: RouteRecordRaw[] = [
   {
@@ -19,6 +20,11 @@ const routes: RouteRecordRaw[] = [
     path: '/task-settings',
     name: 'TaskSettings',
     component: TaskSettings
+  },
+  {
+    path: '/add-source',
+    name: 'AddSource',
+    component: AddSource
   }
 ]
 

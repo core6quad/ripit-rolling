@@ -1,6 +1,7 @@
 <template>
 	<div class="home-container">
 		<n-button type="primary" @click="goToSettings">Settings</n-button>
+		<n-button type="primary" @click="addSource">Add Source</n-button>
 		<h2>Task List</h2>
 		<n-list bordered>
 			<n-list-item v-for="task in tasks" :key="task.id">
@@ -22,6 +23,7 @@
 import { NButton, NList, NListItem, NThing, NSpace } from 'naive-ui'
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import AddSource from './AddSource.vue'
 
 const router = useRouter()
 
@@ -37,6 +39,10 @@ const goToSettings = () => {
 
 const downloadTask = (id) => {
 	alert(`Downloading task ${id}`)
+}
+
+const addSource = () => {
+	router.push('/add-source')
 }
 
 const configureTask = () => {

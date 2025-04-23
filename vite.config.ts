@@ -27,6 +27,7 @@ export default defineConfig({
 	resolve: {
 		alias: {
 			"@": path.resolve(__dirname, "src"), // Alias "@" points to "src/"
+			"@shared": path.resolve(__dirname, 'src/shared')
 		},
 	},
 	base: "./", // Relative paths for assets in the final build
