@@ -16,11 +16,16 @@
 		"paths": {
 			"@/*": [
 				"src/*"
-			] // Alias "@" for simplified path resolution to `src/*`
+			],
+			"@shared/*": [
+				"src/shared/*"
+			]
+			// Alias "@" for simplified path resolution to `src/*`
 		}
 	},
 	"include": [
-		"src/main/**/*.ts" // Only include the Electron main process code
+		"src/main/**/*.ts", // Only include the Electron main process code
+		"src/shared/**/*.ts",
 		// "src/**/*.vue" // Exclude Vue files; already handled by Vite
 	],
 	"exclude": [
