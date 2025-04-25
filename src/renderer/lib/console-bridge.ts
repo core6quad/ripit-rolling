@@ -15,13 +15,64 @@
  * 
  */
 
+import { onMounted } from "vue";
+import { useElectronBridge } from "../plugins/electron-bridge";
+import { ipcRenderer } from "electron";
+import { nextTick } from "vue";
+import { RIPIT_BRIDGE_NAME } from '../../shared/types/ipcConstants';
+
 export function attachMainConsoleToRenderer(): void {
-  console.log('[MAIN][Registered]');
-  window['electron'].onConsoleLog((_event, level: string, args: any[]) => {
+	const bridge = useElectronBridge();
+	console.log('[MAIN][Registered], is bridge present=', !!bridge);
+
+	window[RIPIT_BRIDGE_NAME].onConsoleLog((_event, level: string, args: any[]) => {
     if (console[level]) {
       console[level]('[MAIN]', ...args);
     } else {
       console.log('[MAIN]', ...args);
     }
   });
+	
+	// return await bridge.addSource(source);
+	// window['electron'].onConsoleLog((_event, level: string, args: any[]) => {
+
+	// const listener = (_event, level: string, args: any[]) => {
+	//   if (console[level]) {
+	//     console[level]('[MAIN]', ...args);
+	//   } else {
+	//     console.log('[MAIN]', ...args);
+	//   }
+	// };
+
+	// const listener = (event: Electron.IpcRendererEvent, level: string, args: any[]) => {
+	// 	if (console[level]) {
+	// 		console[level]('[MAIN]', ...args);
+	// 	} else {
+	// 		console.log('[MAIN]', ...args);
+	// 	}
+	// };
+
+	// bridge.onConsoleLog(listener);
+
+	// onMounted(() => {
+	// 	ipcRenderer.on('CID_ON_CONSOLE_LOG', (event, level, args) => {
+	// 		// Используем соответствующий метод console для вывода логов
+	// 		if (console[level]) {
+	// 			console[level]('[Renderer]', ...args);
+	// 		} else {
+	// 			console.log('[Renderer]', ...args);
+	// 		}
+	// 	});
+	// });
+	// onMounted(() => {
+	// 	nextTick(() => {
+	// 		bridge.onConsoleLog((level: string, args: any[]) => {
+	// 			if (console[level]) {
+	// 				console[level]('[Renderer]', ...args);
+	// 			} else {
+	// 				console.log('[Renderer]', ...args);
+	// 			}
+	// 		});
+	// 	});
+	// });
 }

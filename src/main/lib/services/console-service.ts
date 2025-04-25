@@ -45,7 +45,7 @@ export class ConsoleService {
         const win = this.getWindow();
         if (win && win.webContents) {
           // Send log to renderer via IPC
-          win.webContents.send('console-log', level, args);
+          win.webContents.send('CID_ON_CONSOLE_LOG', level, args);
         }
       };
     }

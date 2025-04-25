@@ -12,16 +12,16 @@
 		"outDir": "dist", // Output directory for compiled files
 		"rootDir": "src", // Root directory for source files,
 		"strict": false,
-		// "types": ["vite/client", "node", "vue"],
-		"paths": {
-			"@/*": [
-				"src/*"
-			],
-			"@shared/*": [
-				"src/shared/*"
-			]
+		"types": ["vite/client", "node", "vue"],
+		// "paths": {
+			// "@/*": [
+			// 	"src/*"
+			// ],
+			// "@shared/*": [
+			// 	"src/shared/*"
+			// ]
 			// Alias "@" for simplified path resolution to `src/*`
-		}
+		// }
 	},
 	"include": [
 		"src/main/**/*.ts", // Only include the Electron main process code

@@ -20,6 +20,7 @@ app.whenReady().then(async () => {
 				// Enable preload script and isolate renderer from the main process
 				preload: path.join(__dirname, "preload.js"),
 				contextIsolation: true,
+				webSecurity: false,
 				// enableRemoteModule: false,
 			},
 		});
@@ -51,7 +52,8 @@ app.whenReady().then(async () => {
 		});
 
 		// IPC handlers
-		ipcMain.handle("file-check", getFileSize);
+		// ipcMain.handle("file-check", getFileSize);
+		(await serviceContainer.get('ytdlp')).handleAll();
 
 		console.log('[Loading] Init');
 		try {
