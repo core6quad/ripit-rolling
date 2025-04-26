@@ -1,7 +1,7 @@
 <template>
 	<div class="home-container">
-		<n-button type="primary" @click="goToSettings">Settings</n-button>
-		<n-button type="primary" @click="addSource">Add Source</n-button>
+		<!-- <n-button type="primary" @click="goToSettings">Settings</n-button>
+		<n-button type="primary" @click="addSource">Add Source</n-button> -->
 		<h2>Task List</h2>
 		<n-list bordered>
 			<n-list-item v-for="task in tasks" :key="task.id">
@@ -33,17 +33,17 @@ const tasks = ref([
 	{ id: 3, text: 'Test API endpoints' }
 ])
 
-const goToSettings = () => {
-	router.push('/settings')
-}
-
 const downloadTask = (id) => {
 	alert(`Downloading task ${id}`)
 }
 
-const addSource = () => {
-	router.push('/add-source')
-}
+// const goToSettings = () => {
+// 	router.push('/settings')
+// }
+
+// const addSource = () => {
+// 	router.push('/add-source')
+// }
 
 const configureTask = () => {
 	router.push('/task-settings')

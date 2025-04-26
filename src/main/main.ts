@@ -16,6 +16,8 @@ app.whenReady().then(async () => {
 		const mainWindow = new BrowserWindow({
 			width: 800,
 			height: 600,
+			minWidth: 400,
+			minHeight: 300,
 			webPreferences: {
 				// Enable preload script and isolate renderer from the main process
 				preload: path.join(__dirname, "preload.js"),
