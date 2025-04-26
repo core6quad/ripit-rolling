@@ -24,14 +24,14 @@
 			"naive-ui"
 		],
 		"baseUrl": ".",
-		"paths": {
-			"@/*": [
-				"src/renderer/*"
-			],
-			"@shared/*": [
-				"src/shared/*"
-			]
-		},
+		// "paths": {
+		// 	"@/*": [
+		// 		"src/renderer/*"
+		// 	],
+		// 	"@shared/*": [
+		// 		"src/shared/*"
+		// 	]
+		// },
 		"allowJs": true
 	},
 	"include": [

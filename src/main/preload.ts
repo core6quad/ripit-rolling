@@ -1,25 +1,60 @@
-// import { contextBridge, ipcRenderer } from "electron";
-
-// // Expose limited API to the renderer process
-
-// contextBridge.exposeInMainWorld("electron", {
-//   // Method for invoking the main process via IPC
-//   invoke: (channel: string, ...args: any[]) => ipcRenderer.invoke(channel, ...args),
-// });
-
 import { contextBridge, ipcRenderer } from 'electron';
+import { ElectronBridge } from '../shared/types/electron-bridge';
+import { MediaFile } from '../shared/types/media-file';
+import { IPCConstantsInvoke, IPCConstantsOn  } from '../shared/types/ipcConstants';
 
-contextBridge.exposeInMainWorld("electron", {
-  // Invokes a method in the main process through IPC
-  invoke: (channel: string, ...args: any[]) => ipcRenderer.invoke(channel, ...args),
+// you cannot export from both subsystems - just copy here
+export const RIPIT_BRIDGE_NAME = 'electronBridge';
 
-  // You can also expose other safe methods, e.g., send messages to main process
-  send: (channel: string, ...args: any[]) => ipcRenderer.send(channel, ...args),
+export const rawInvokeMap = {
+	CID_GET_SOURCE_INFO: {} as MediaFile.SourceFile | MediaFile.SourcePlaylist,
+	CID_ADD_SOURCE: true,
+} satisfies Record<IPCConstantsInvoke, unknown>;
 
-  // Example method to check if a file exists (assuming a custom 'file-check' IPC channel)
-  fileExists: (filePath: string) => ipcRenderer.invoke('file-check', filePath),
-  onConsoleLog: (callback) => {
-    ipcRenderer.on('console-log', callback);
-  },
+export type IPCInvokeMap = typeof rawInvokeMap;
 
+/**
+ * Generic type for ipcRenderer.invoke with typed return values per channel.
+ */
+export type Invoke = <T extends keyof IPCInvokeMap>(
+	channel: T,
+	...args: any[]
+) => Promise<IPCInvokeMap[T]>;
+
+const _invoke = ipcRenderer.invoke as Invoke;
+
+/**
+ * Maps IPC event names to their listener callback signatures.
+ * Used to strongly type ipcRenderer.on calls.
+ */
+// export const rawOnMap = {
+// 	CID_ON_CONSOLE_LOG: null,
+// } satisfies Record<IPCConstantsOn, unknown>;
+
+// export type IPCOnMap = typeof rawOnMap;
+
+/**
+ * Generic type for ipcRenderer.on with typed listener functions.
+ */
+// export type On = <T extends keyof IPCOnMap>(
+// 	channel: T,
+// 	listener: IPCOnMap[T]
+// ) => void;
+
+// const _on = ipcRenderer.on as On;
+
+const bridge: ElectronBridge = {
+	getSourceByUrl: (url) => _invoke('CID_GET_SOURCE_INFO', url),
+	addSource: (source) => _invoke('CID_ADD_SOURCE', source),
+	// send: (channel: string, ...args: any[]) => ipcRenderer.send(channel, ...args),
+};
+
+contextBridge.exposeInMainWorld(RIPIT_BRIDGE_NAME, bridge);
+
+ipcRenderer.on('CID_ON_CONSOLE_LOG', (event, level, args) => {
+	if (console[level]) {
+		console[level]('[Renderer]', ...args);
+	} else {
+		console.log('[Renderer]', ...args);
+	}
 });

@@ -22,14 +22,16 @@
 import { BrowserWindow } from 'electron';
 import { ConsoleService } from '../lib/services/console-service';
 import { TypedServiceContainer } from '../lib/services/service-container';
+import { YTDLPService } from '../../main/services/ytdlp-service';
 
-export interface AppServices {
+interface AppServices {
   console: ConsoleService;
-
+  ytdlp: YTDLPService;
 }
 
 export const serviceContainer = new TypedServiceContainer<AppServices>();
 
 export function registerCoreServices(getWindow: () => BrowserWindow | null) {
   serviceContainer.register('console', () => new ConsoleService(getWindow));
+  serviceContainer.register('ytdlp', () => new YTDLPService(getWindow));
 }

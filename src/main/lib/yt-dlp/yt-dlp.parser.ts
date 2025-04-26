@@ -12,6 +12,7 @@ export async function getFileInfoFromYtDlp(
   ytDlpPath: string,
   url: string
 ): Promise<MediaFile.SourceFile | MediaFile.SourcePlaylist> {
+  console.log('[Parser] started')
   return new Promise((resolve, reject) => {
     const proc = spawn(ytDlpPath, ['--dump-single-json', url]);
 
