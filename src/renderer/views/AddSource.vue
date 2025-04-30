@@ -7,14 +7,11 @@
 					<n-input v-model:value="url" placeholder="Enter video URL" clearable @keyup.enter="checkSource" />
 
 					<n-button :loading="loading" :disabled="!url.trim() || loading" @click="checkSource" type="primary">
-						<!-- Button spinner -->
 						<template #icon>
 							<n-icon v-if="loading">
-								<!-- Spin icon when loading -->
 								<n-spin />
 							</n-icon>
 							<n-icon v-else>
-								<!-- FileInfo icon when not loading -->
 								<InformationCircleOutline />
 							</n-icon>
 						</template>
@@ -37,18 +34,24 @@
 								<div>Uploader: {{ source.uploader || 'Unknown' }}</div>
 								<div>Duration: {{ source.duration || 'N/A' }} sec</div>
 								<div>Formats: {{ source.tracks.length }}</div>
-								<img v-if="source?.thumbnail" :src="source.thumbnail" alt="Thumbnail"  width="360px"/>
-								<!-- Display tracks -->
-								<div v-if="source.tracks.length > 0">
-									<n-list bordered>
-										<n-list-item v-for="(track, index) in source.tracks" :key="index">
-											<div>{{ track.format }}</div>
-										</n-list-item>
-									</n-list>
-								</div>
+								<img v-if="source?.thumbnail" :src="source.thumbnail" alt="Thumbnail" width="360px" />
+
+								<!-- Display tracks with checkbox selection -->
+								<track-selector
+									v-if="source.tracks.length > 0"
+									:tracks="source.tracks"
+									v-model="selectedTracks"
+								/>
 							</n-space>
+
 							<template #footer>
-								<n-button type="success" @click="addSource">Add</n-button>
+								<n-button
+									type="success"
+									:disabled="selectedTracks.length === 0"
+									@click="addSource"
+								>
+									Add
+								</n-button>
 							</template>
 						</n-card>
 					</template>
@@ -64,25 +67,23 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { NInput, NButton, NInputGroup, NCard, NAlert, NSpace, NEmpty, NIcon, NSpin, NList, NListItem } from 'naive-ui';
+import { NInput, NButton, NInputGroup, NCard, NAlert, NSpace, NEmpty, NIcon, NSpin } from 'naive-ui';
 import { MediaFile } from '@shared/types/media-file';
 import { useElectronBridge } from '../plugins/electron-bridge';
 import { InformationCircleOutline } from '@vicons/ionicons5';
+import TrackSelector from './TrackSelector.vue';
 
-// State
 const url = ref('');
 const error = ref<string | null>(null);
 const source = ref<MediaFile.SourceFile | null>(null);
-const loading = ref(false); // New loading state
+const loading = ref(false);
+
+const selectedTracks = ref<MediaFile.Track[]>([]);
 
 const router = useRouter();
 
-/**
- * Gets media source info using the Electron bridge.
- * Requires the ElectronBridge plugin to be installed in the Vue app.
- */
 async function getSourceInfo(url: string): Promise<MediaFile.SourceFile | MediaFile.SourcePlaylist> {
-	const bridge = useElectronBridge(); // Injected via plugin
+	const bridge = useElectronBridge();
 	return await bridge.getSourceByUrl(url);
 }
 
@@ -91,11 +92,11 @@ async function addSourceToLibrary(source: MediaFile.SourceFile): Promise<boolean
 	return await bridge.addSource(source);
 }
 
-// Logic
 async function checkSource() {
 	error.value = null;
 	source.value = null;
-	loading.value = true; // Set loading to true when starting the request
+	selectedTracks.value = [];
+	loading.value = true;
 	try {
 		const result = await getSourceInfo(url.value.trim());
 
@@ -104,7 +105,6 @@ async function checkSource() {
 		if ('error' in result) {
 			error.value = result.error;
 		} else if ('entries' in result) {
-			// Playlist detected
 			error.value = 'Playlists are not supported yet.';
 		} else {
 			source.value = result;
@@ -112,15 +112,20 @@ async function checkSource() {
 	} catch (err: any) {
 		error.value = 'Failed to fetch media info: ' + err.message;
 	} finally {
-		loading.value = false; // Reset loading once the request finishes
+		loading.value = false;
 	}
 }
 
 async function addSource() {
 	if (!source.value) return;
 
+	const sourceToSave = {
+		...source.value,
+		tracks: selectedTracks.value, // ✅ selected track only
+	};
+
 	try {
-		const ok = await addSourceToLibrary(source.value);
+		const ok = await addSourceToLibrary(sourceToSave);
 		if (ok) {
 			router.push('/');
 		} else {
