@@ -1,5 +1,5 @@
 /**
- * services.ts
+ * src/main/services/services.ts
  * 
  * This file defines the application's service container and registers core services.
  * 
@@ -23,10 +23,13 @@ import { BrowserWindow } from 'electron';
 import { ConsoleService } from '../lib/services/console-service';
 import { TypedServiceContainer } from '../lib/services/service-container';
 import { YTDLPService } from '../../main/services/ytdlp-service';
+import { QueueStore } from '../lib/services/queue-store-service';
+import { JsonQueueStore } from './json-queue-store-service';
 
 interface AppServices {
   console: ConsoleService;
   ytdlp: YTDLPService;
+  queue: QueueStore;
 }
 
 export const serviceContainer = new TypedServiceContainer<AppServices>();
@@ -34,4 +37,5 @@ export const serviceContainer = new TypedServiceContainer<AppServices>();
 export function registerCoreServices(getWindow: () => BrowserWindow | null) {
   serviceContainer.register('console', () => new ConsoleService(getWindow));
   serviceContainer.register('ytdlp', () => new YTDLPService(getWindow));
+  serviceContainer.register('queue', () => new JsonQueueStore());
 }

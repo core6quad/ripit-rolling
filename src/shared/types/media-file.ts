@@ -1,5 +1,5 @@
 /**
- * media-file.model.ts
+ * src/shared/types/media-file.ts
  *
  * This module defines a structured data model under the MediaFile namespace
  * to represent parsed information from `yt-dlp --dump-single-json` for both

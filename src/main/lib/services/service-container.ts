@@ -1,4 +1,5 @@
 /**
+ * src/main/lib/services/service-container.ts
  * TypedServiceContainer is a lightweight dependency injection container
  * designed for managing services with lazy initialization and strong typing.
  * 
