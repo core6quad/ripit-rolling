@@ -117,34 +117,10 @@ export namespace MediaFile {
 
   /** Actual downloaded file metadata (filled post-download) */
   export type Data = {
-    id: string;
+    id: string; // UUID generated on adding
     fileName: string;
-    size: number; // bytes
+    size: number; // bytes - null before downloading ang merging tracks
     created: number; // unix timestamp
-    source: SourceFile; // Original media info
+    source: SourceFile; // Original media info -> const
   };
 }
-
-// export namespace MediaFile {
-
-// 	export type Track = {
-// 		// тут вставить
-// 	}
-
-// 	export type SourceFile = {
-// 		// тут вставить
-// 		tracks: Array<Track>,
-// 	}
-// 	export type SourcePlaylist = {
-// 		// тут вставить
-// 	}
-
-// 	export type Data = { // этот не трогай - это уже файл после скачивания будет
-// 		id: string,
-// 		fileName: string,
-// 		size: number // bytes
-// 		created: number // time - unixtime
-
-// 		source: SourceFile, // Id
-// 	}
-// }
