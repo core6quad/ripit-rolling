@@ -8,6 +8,7 @@ import { MediaFile } from "./media-file";
 export interface ElectronBridge {
   getSourceByUrl(url: string): Promise<MediaFile.SourceFile | MediaFile.SourcePlaylist>;
   addSource(source: MediaFile.SourceFile): Promise<boolean>; // Replace 'any' with proper return type
+  getList(): Promise<Array<MediaFile.SourceFile>>;
   // onConsoleLog(listener): void;
   // send: (channel: string, ...args: any[]) => any;
 }

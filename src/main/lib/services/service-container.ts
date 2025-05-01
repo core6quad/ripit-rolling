@@ -26,7 +26,7 @@
 
 type ServiceFactory<T> = () => T | Promise<T>;
 
-export class TypedServiceContainer<TMap extends Record<string, any>> {
+export abstract class TypedServiceContainer<TMap extends Record<string, any>> {
   private instances = new Map<keyof TMap, any>();
   private factories = new Map<keyof TMap, ServiceFactory<any>>();
 
@@ -51,4 +51,7 @@ export class TypedServiceContainer<TMap extends Record<string, any>> {
   clear() {
     this.instances.clear();
   }
+
+  // Abstract method to register core services
+  abstract registerCoreServices(...args: any[] | null): void;
 }

@@ -12,6 +12,7 @@
 		"outDir": "dist", // Output directory for compiled files
 		"rootDir": "src", // Root directory for source files,
 		"strict": false,
+		// "strictNullChecks": true,
 		"types": ["vite/client", "node", "vue"],
 		// "paths": {
 			// "@/*": [
