@@ -1,18 +1,15 @@
 import { app, BrowserWindow, ipcMain, dialog, shell, contextBridge, ipcRenderer } from "electron";
 import * as path from "path";
-import { getFileSize } from "./handlers/file.handlers";
 import contextMenu from 'electron-context-menu';
 import { fileExists } from "./utils/file-checks";
 import { appInit } from "./init/init";
-import { registerCoreServices, serviceContainer } from "./services/services";
-// import { appInit, getIndexPath } from "./init/init";
+import { serviceContainer } from "./services/service-container";
 
 const RIPIT_INDEX_FILE = 'index.html';
 
 // app.on("ready", async () => {
 app.whenReady().then(async () => {
 	try {
-
 		const mainWindow = new BrowserWindow({
 			width: 800,
 			height: 600,
@@ -27,12 +24,11 @@ app.whenReady().then(async () => {
 			},
 		});
 
-		// services init
-		registerCoreServices(() => mainWindow);
-		await serviceContainer.get('console');
+		console.log('[Loading] mainWindow created');
 
-		// attachMainConsoleToRenderer();
-		// Load the Vue application's HTML
+		// services init
+		serviceContainer.registerCoreServices(() => mainWindow)
+		await serviceContainer.consoleService; // create service on first access
 
 		const root = __dirname?.slice(0, -5);
 		const indexFile = path.join(root, RIPIT_INDEX_FILE);
@@ -41,7 +37,7 @@ app.whenReady().then(async () => {
 			throw new Error(`Application integrity check failed: index file not found at ${indexFile}`);
 		}
 
-		console.log('[Loading]', indexFile);
+		console.log('[Loading] index file:', indexFile);
 		mainWindow.loadFile(indexFile);
 
 		console.log('[Loading] open devTools');
@@ -55,9 +51,16 @@ app.whenReady().then(async () => {
 
 		// IPC handlers
 		// ipcMain.handle("file-check", getFileSize);
-		(await serviceContainer.get('ytdlp')).handleAll();
 
-		console.log('[Loading] Init');
+		console.log('[Loading][ytdlpService] run');
+		(await serviceContainer.ytdlpService).handleAll();
+
+		console.log('[Loading][queueService] run');
+		const queueService =  await serviceContainer.queueService;
+		await queueService.init();
+		queueService.handleAll();
+
+		console.log('[Loading] App init');
 		try {
 			const initRes = await appInit();
 		} catch (err) {

@@ -1,7 +1,7 @@
 import { contextBridge, ipcRenderer } from 'electron';
 import { ElectronBridge } from '../shared/types/electron-bridge';
 import { MediaFile } from '../shared/types/media-file';
-import { IPCConstantsInvoke, IPCConstantsOn  } from '../shared/types/ipcConstants';
+import { IPCConstantsInvoke, IPCConstantsOn } from '../shared/types/ipcConstants';
 
 // you cannot export from both subsystems - just copy here
 export const RIPIT_BRIDGE_NAME = 'electronBridge';
@@ -9,6 +9,7 @@ export const RIPIT_BRIDGE_NAME = 'electronBridge';
 export const rawInvokeMap = {
 	CID_GET_SOURCE_INFO: {} as MediaFile.SourceFile | MediaFile.SourcePlaylist,
 	CID_ADD_SOURCE: true,
+	CID_GET_LIST: null,
 } satisfies Record<IPCConstantsInvoke, unknown>;
 
 export type IPCInvokeMap = typeof rawInvokeMap;
@@ -46,6 +47,7 @@ const _invoke = ipcRenderer.invoke as Invoke;
 const bridge: ElectronBridge = {
 	getSourceByUrl: (url) => _invoke('CID_GET_SOURCE_INFO', url),
 	addSource: (source) => _invoke('CID_ADD_SOURCE', source),
+	getList: () => _invoke('CID_GET_LIST'),
 	// send: (channel: string, ...args: any[]) => ipcRenderer.send(channel, ...args),
 };
 

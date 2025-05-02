@@ -1,27 +1,27 @@
 import * as https from 'https';
 
-export function downloadFile(url: string, callback: (err: Error | null, data?: Buffer) => void) {
-	https.get(url, (res) => {
-		if (res.statusCode === 302 || res.statusCode === 301) {
-			// Handle redirect
-			const redirectUrl = res.headers.location;
-			console.log(`Redirected to: ${redirectUrl}`);
-			downloadFile(redirectUrl, callback); // Follow the redirect
-		} else if (res.statusCode === 200) {
-			// Handle successful response
-			const chunks = [];
-			res.on('data', (chunk) => chunks.push(chunk));
-			res.on('end', () => {
-				const data = Buffer.concat(chunks);
-				callback(null, data);
-			});
-		} else {
-			callback(new Error(`Failed to download file: ${res.statusCode}`));
-		}
-	}).on('error', (err) => {
-		callback(err);
-	});
-}
+// export function downloadFile(url: string, callback: (err: Error | null, data?: Buffer) => void) {
+// 	https.get(url, (res) => {
+// 		if (res.statusCode === 302 || res.statusCode === 301) {
+// 			// Handle redirect
+// 			const redirectUrl = res.headers.location;
+// 			console.log(`Redirected to: ${redirectUrl}`);
+// 			downloadFile(redirectUrl, callback); // Follow the redirect
+// 		} else if (res.statusCode === 200) {
+// 			// Handle successful response
+// 			const chunks = [];
+// 			res.on('data', (chunk) => chunks.push(chunk));
+// 			res.on('end', () => {
+// 				const data = Buffer.concat(chunks);
+// 				callback(null, data);
+// 			});
+// 		} else {
+// 			callback(new Error(`Failed to download file: ${res.statusCode}`));
+// 		}
+// 	}).on('error', (err) => {
+// 		callback(err);
+// 	});
+// }
 
 import { createWriteStream } from 'fs';
 import { Readable } from 'stream';

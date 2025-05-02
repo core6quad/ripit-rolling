@@ -14,7 +14,7 @@ export class YTDLPService {
 	public handleAll() {
 		const handlers: Handlers = [
 			{ channel: 'CID_GET_SOURCE_INFO', listener: this.getSourceInfo },
-			{ channel: 'CID_ADD_SOURCE', listener: this.getSourceInfo },
+			{ channel: 'CID_ADD_SOURCE', listener: this.addSource },
 		];
 
 		handlers.forEach(({ channel, listener }) => ipcMain.handle(channel, listener));

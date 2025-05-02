@@ -6,6 +6,7 @@
 export type IPCConstantsInvoke =
   | 'CID_GET_SOURCE_INFO'
   | 'CID_ADD_SOURCE'
+  | 'CID_GET_LIST'
   ;
 
 export type IPCConstantsOn =
