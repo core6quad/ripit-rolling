@@ -4,26 +4,25 @@
  */
 
 import { z } from 'zod';
-import { MediaFile } from '../../../shared/types/media-file';
 
 // Schema for MediaFile.Track
 export const TrackSchema = z.object({
   formatId: z.string(),
-  format: z.string(),
+  format: z.string().nullable(),
   ext: z.string(),
-  vcodec: z.string(),
-  acodec: z.string(),
-  url: z.string(),
-  hasAudio: z.boolean(),
-  hasVideo: z.boolean(),
-  width: z.number().optional(),
-  height: z.number().optional(),
-  fps: z.number().optional(),
-  tbr: z.number().optional(),
-  abr: z.number().optional(),
-  vbr: z.number().optional(),
-  asr: z.number().optional(),
-  filesize: z.number().optional(),
+  vcodec: z.string().nullable(),
+  acodec: z.string().nullable().optional(),
+  url: z.string().nullable(),
+  hasAudio: z.boolean().nullable(),
+  hasVideo: z.boolean().nullable(),
+  width: z.number().nullable().optional(),
+  height: z.number().nullable().optional(),
+  fps: z.number().nullable().optional(),
+  tbr: z.number().nullable().optional(),
+  abr: z.number().nullable().optional(),
+  vbr: z.number().nullable().optional(),
+  asr: z.number().nullable().optional(),
+  filesize: z.number().nullable().optional(),
 }).strict();
 
 // Schema for MediaFile.SourceFile
@@ -45,9 +44,10 @@ export const SourceFileSchema = z.object({
 // Schema for MediaFile.Data
 export const MediaDataSchema = z.object({
   id: z.string(),
+  trackIds: z.array(TrackSchema),
   fileName: z.string(),
-  size: z.number(),
-  created: z.number(),
+  size: z.number().optional(),
+  created: z.number().optional(),
   source: SourceFileSchema,
 }).strict();
 

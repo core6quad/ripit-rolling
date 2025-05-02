@@ -57,7 +57,7 @@ class AppServiceContainer extends TypedServiceContainer<AppServices> {
 	}
 
 	// Named getter for queue service
-	get queueService() {
+	get queueService(): Promise<QueueStore> {
 		return this.get('queue');
 	}
 }

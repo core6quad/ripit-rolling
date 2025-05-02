@@ -12,7 +12,7 @@
 
 <script setup lang="ts">
 import { ref, watch } from 'vue';
-import type { MediaFile } from '@shared/types/media-file';
+import { MediaFile } from '../../shared/types/media-file';
 
 const props = defineProps<{
 	tracks: MediaFile.Track[];

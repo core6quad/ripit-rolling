@@ -117,10 +117,11 @@ export namespace MediaFile {
 
 	/** Actual downloaded file metadata (filled post-download) */
 	export type Data = {
-		id: string; // UUID generated on adding
-		fileName: string;
-		size: number; // bytes - null before downloading ang merging tracks
-		created: number; // unix timestamp
+		id: string; // media file UUID generated on adding
+		fileName: string; // +-> title
+		trackIds: Array<Track>; // yt-dlp track ids
+		size?: number; // bytes - null before downloading ang merging tracks
+		created?: number; // unix timestamp  - null before downloading ang merging tracks
 		source: SourceFile; // Original media info -> const
 	};
 }

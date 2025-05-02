@@ -1,0 +1,25 @@
+import { MediaFile } from "../../../shared/types/media-file";
+
+import { v4 as uuidv4 } from 'uuid';
+import { cloneDeep } from 'lodash';
+
+export function createMediaFile(
+	fileName: string,
+	trackIds: Array<MediaFile.Track>,
+	source: MediaFile.SourceFile | null
+): MediaFile.Data {
+	const id = uuidv4();
+
+	if (!source) {
+		throw new Error('Cannot create MediaFile.Data, not null source is expected');
+	}
+
+	return {
+		id,
+		fileName,
+		trackIds: cloneDeep(trackIds),
+		size: 0,
+		created: 0, // created media file
+		source: cloneDeep(source),
+	}
+}

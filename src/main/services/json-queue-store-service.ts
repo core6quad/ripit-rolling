@@ -58,6 +58,7 @@ export class JsonQueueStore extends QueueStore {
 		let invalidEntries: Array<MediaFileValidation.InvalidRecord> = [];
 
 		try {
+			console.log('[QueueService][loadStore]');
 			const raw = await this.writer.read();
 			const parsed = JSON.parse(raw);
 
@@ -71,6 +72,7 @@ export class JsonQueueStore extends QueueStore {
 			}
 
 			// Используем validateAndCloneMediaFiles
+			console.log('[QueueService][loadStore] loaded', parsed);
 			const { valid, invalid } = MediaFileValidation.validatedClone(parsed);
 
 			validQueue = valid;
@@ -80,15 +82,19 @@ export class JsonQueueStore extends QueueStore {
 			throw err;
 		}
 
+		console.log('[QueueService][loadStore] done', validQueue, invalidEntries);
 		return { validQueue, invalidEntries };
 	}
 
-	async add(file: MediaFile.Data): Promise<void> {
+	async add(file: MediaFile.Data): Promise<boolean> {
+		console.log('[QueueService][Add] data = ', file);
 		const exists = this.memoryQueue.some(item => item.id === file.id);
 		if (!exists) {
 			this.memoryQueue.push(file);
 			await this.writer.scheduleWrite(this.memoryQueue);
+			return true;
 		}
+		return false;
 	}
 
 	async removeFiles(ids: string[]): Promise<void> {
@@ -97,6 +103,8 @@ export class JsonQueueStore extends QueueStore {
 	}
 
 	async getList(): Promise<MediaFile.Data[]> {
+		// return structuredClone(this.memoryQueue);
+		console.log('[Queue][Getlist] ', this.memoryQueue);
 		return structuredClone(this.memoryQueue);
 	}
 
@@ -121,17 +129,24 @@ export class JsonQueueStore extends QueueStore {
 		}
 	}
 
-	public handleAll() {
+	public async handleAll() {
 		const handlers: Handlers = [
-			{ channel: 'CID_GET_LIST', listener: this.getList },
-			// { channel: 'CID_ADD_SOURCE', listener: this.addSource },
+			{ channel: 'CID_GET_LIST', listener: this.getListHandler },
+			{ channel: 'CID_ADD_SOURCE', listener: this.addListener },
 		];
 
-		handlers.forEach(({ channel, listener }) => ipcMain.handle(channel, listener));
+		// Асинхронно добавляем обработчики
+		for (const { channel, listener } of handlers) {
+			await ipcMain.handle(channel, listener);
+		}
 	}
 
-	// public getListHandler: (_event: Electron.IpcMainInvokeEvent) => Promise<Array<MediaFile.Data>> =
-	// 	async (_event) => [];
+	public getListHandler: (_event: Electron.IpcMainInvokeEvent) => Promise<Array<MediaFile.Data>> =
+		async (_event) => this.getList();
+
+	public addListener: (_event: Electron.IpcMainInvokeEvent, data: MediaFile.Data) => Promise<boolean> =
+		async (_event, data) => this.add(data);
+
 
 
 }

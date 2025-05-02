@@ -7,8 +7,9 @@
 		"electron-dev": "concurrently \"vite\" \"electron .\"",
 		"build": "vite build",
 		"tsc": "tsc",
-		"electron": "electron .",
-		"go": "yarn build && yarn tsc && electron .",
+		"el": "electron .",
+		"go2": "yarn build && yarn tsc && electron .",
+		"go": "(yarn build && yarn tsc && electron .) 2>&1 | grep -v 'eglQueryDeviceAttribEXT'",
 		"build:e": "yarn build && tsc && electron-builder"
 	},
 	"keywords": [],
@@ -29,6 +30,7 @@
 		"vue-router": "^4.5.0",
 		"electron-context-menu": "^4.0.5",
 		"@vicons/ionicons5":"^0.13.0",
+		"lodash":"^4.17.21",
 		"zod": "3.24.3"
 	},
 	"build": {
