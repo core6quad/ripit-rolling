@@ -4,6 +4,7 @@ import contextMenu from 'electron-context-menu';
 import { fileExists } from "./utils/file-checks";
 import { appInit } from "./init/init";
 import { serviceContainer } from "./services/service-container";
+import { allConstantsInvoke } from "../shared/types/ipcConstants";
 
 const RIPIT_INDEX_FILE = 'index.html';
 
@@ -53,12 +54,14 @@ app.whenReady().then(async () => {
 		// ipcMain.handle("file-check", getFileSize);
 
 		console.log('[Loading][ytdlpService] run');
-		(await serviceContainer.ytdlpService).handleAll();
+		await (await serviceContainer.ytdlpService).handleAll();
 
 		console.log('[Loading][queueService] run');
-		const queueService =  await serviceContainer.queueService;
+		const queueService = await serviceContainer.queueService;
 		await queueService.init();
-		queueService.handleAll();
+		await queueService.handleAll();
+
+		validateIpcInvokeHandlers();
 
 		console.log('[Loading] App init');
 		try {
@@ -73,3 +76,17 @@ app.whenReady().then(async () => {
 });
 
 
+function validateIpcInvokeHandlers() {
+	console.log('[HandlersCheck] _invokeHandlers=', ((ipcMain as any)._invokeHandlers as Map<string, Function>).size)
+	const handlers = (ipcMain as any)._invokeHandlers as Map<string, Function>;
+	if (!handlers) {
+		throw new Error('ipcMain._invokeHandlers not found');
+	}
+
+	allConstantsInvoke.forEach((channel) => {
+		console.log('[HandlersCheck]CID=', channel, handlers.has(channel));
+		if (!handlers.has(channel)) {
+			throw new Error(`Missing ipcMain.handle() for channel: '${channel}'`);
+		}
+	});
+}

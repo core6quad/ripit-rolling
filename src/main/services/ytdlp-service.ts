@@ -11,19 +11,17 @@ export class YTDLPService {
 	constructor(private getWindow: () => BrowserWindow | null) {
 	}
 
-	public handleAll() {
+	public async handleAll() {
 		const handlers: Handlers = [
 			{ channel: 'CID_GET_SOURCE_INFO', listener: this.getSourceInfo },
-			{ channel: 'CID_ADD_SOURCE', listener: this.addSource },
 		];
 
-		handlers.forEach(({ channel, listener }) => ipcMain.handle(channel, listener));
+		for (const { channel, listener } of handlers) {
+			await ipcMain.handle(channel, listener);
+		}
 	}
 
 	public getSourceInfo: (_event: Electron.IpcMainInvokeEvent, url: string) => Promise<MediaFile.SourceFile | MediaFile.SourcePlaylist> =
 		async (_event, url) => getFileInfoFromYtDlp(RIPIT_YT_DLP_RUN, url);
-
-	public addSource: (_event: Electron.IpcMainInvokeEvent, url: string) => Promise<boolean> =
-		async (_event, url) => false;
 
 }

@@ -37,19 +37,11 @@
 								<img v-if="source?.thumbnail" :src="source.thumbnail" alt="Thumbnail" width="360px" />
 
 								<!-- Display tracks with checkbox selection -->
-								<track-selector
-									v-if="source.tracks.length > 0"
-									:tracks="source.tracks"
-									v-model="selectedTracks"
-								/>
+								<track-selector v-if="source.tracks.length > 0" :tracks="source.tracks" v-model="selectedTracks" />
 							</n-space>
 
 							<template #footer>
-								<n-button
-									type="success"
-									:disabled="selectedTracks.length === 0"
-									@click="addSource"
-								>
+								<n-button type="success" :disabled="selectedTracks.length === 0" @click="addSource">
 									Add
 								</n-button>
 							</template>
@@ -65,17 +57,20 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { readonly, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { NInput, NButton, NInputGroup, NCard, NAlert, NSpace, NEmpty, NIcon, NSpin } from 'naive-ui';
-import { MediaFile } from '@shared/types/media-file';
 import { useElectronBridge } from '../plugins/electron-bridge';
 import { InformationCircleOutline } from '@vicons/ionicons5';
 import TrackSelector from './TrackSelector.vue';
+import { MediaFile } from '../../shared/types/media-file';
+import { createMediaFile } from '../lib/utils/media-file';
 
 const url = ref('');
 const error = ref<string | null>(null);
 const source = ref<MediaFile.SourceFile | null>(null);
+// const source = readonly(_source);
+
 const loading = ref(false);
 
 const selectedTracks = ref<MediaFile.Track[]>([]);
@@ -87,9 +82,10 @@ async function getSourceInfo(url: string): Promise<MediaFile.SourceFile | MediaF
 	return await bridge.getSourceByUrl(url);
 }
 
-async function addSourceToLibrary(source: MediaFile.SourceFile): Promise<boolean> {
+async function addSourceToLibrary(data: MediaFile.Data): Promise<boolean> {
 	const bridge = useElectronBridge();
-	return await bridge.addSource(source);
+	console.log('[UI][Add]', { bridge, data, isExist: !!bridge.addSource });
+	return await bridge.addSource(data);
 }
 
 async function checkSource() {
@@ -102,9 +98,13 @@ async function checkSource() {
 
 		console.log('[UI][checkSource] result', result);
 
-		if ('error' in result) {
-			error.value = result.error;
-		} else if ('entries' in result) {
+		// if ('error' in result) {
+		// 	error.value = result.error;
+		// } else 
+
+
+
+		if ('entries' in result) {
 			error.value = 'Playlists are not supported yet.';
 		} else {
 			source.value = result;
@@ -117,15 +117,17 @@ async function checkSource() {
 }
 
 async function addSource() {
-	if (!source.value) return;
+	if (!source.value || !selectedTracks.value) return;
 
-	const sourceToSave = {
-		...source.value,
-		tracks: selectedTracks.value, // ✅ selected track only
-	};
+	const fileName = "";
+
+	console.log({ source });
+	const data: MediaFile.Data = createMediaFile(fileName, selectedTracks.value, source.value);
+
+	console.log({ data });
 
 	try {
-		const ok = await addSourceToLibrary(sourceToSave);
+		const ok = await addSourceToLibrary(data);
 		if (ok) {
 			router.push('/');
 		} else {

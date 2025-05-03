@@ -1,16 +1,14 @@
 <template>
 	<div class="home-container">
-		<!-- <n-button type="primary" @click="goToSettings">Settings</n-button>
-		<n-button type="primary" @click="addSource">Add Source</n-button> -->
-		<h2>Task List</h2>
+		<h2>Media Files List</h2>
 		<n-list bordered>
 			<n-list-item v-for="task in tasks" :key="task.id">
-				<n-thing :title="`Task ${task.id}`" :description="task.text">
+				<n-thing :title="task.fileName || 'Untitled'" :description="task.source.webpageUrl">
 					<template #action>
 						<n-space>
-							<n-button size="small" @click="downloadTask(task.id)">Download</n-button>
-							<n-button size="small" @click="configureTask(task.id)">Configure</n-button>
-							<n-button size="small" type="error" @click="deleteTask(task.id)">Delete</n-button>
+							<n-button size="small" @click="downloadTask(task)">Download</n-button>
+							<n-button size="small" @click="configureTask(task)">Configure</n-button>
+							<n-button size="small" type="error" @click="deleteMediaFile(task.id)">Delete</n-button>
 						</n-space>
 					</template>
 				</n-thing>
@@ -19,38 +17,41 @@
 	</div>
 </template>
 
-<script setup>
-import { NButton, NList, NListItem, NThing, NSpace } from 'naive-ui'
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
-import AddSource from './AddSource.vue'
+<script setup lang="ts">
+import { ref, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
+import { NButton, NList, NListItem, NThing, NSpace } from 'naive-ui';
+import { useElectronBridge } from '../plugins/electron-bridge';
+import type { MediaFile } from '../../shared/types/media-file';
 
-const router = useRouter()
+const router = useRouter();
+const bridge = useElectronBridge();
+const tasks = ref<MediaFile.Data[]>([]);
 
-const tasks = ref([
-	{ id: 1, text: 'Complete project documentation' },
-	{ id: 2, text: 'Update database schema' },
-	{ id: 3, text: 'Test API endpoints' }
-])
-
-const downloadTask = (id) => {
-	alert(`Downloading task ${id}`)
+// Загрузка списка из ElectronBridge
+async function loadList() {
+	try {
+		const list = await bridge.getList();
+		console.log('[UI][GetList]', { list });
+		tasks.value = list;
+	} catch (e) {
+		console.error('Failed to load tasks', e);
+	}
 }
 
-// const goToSettings = () => {
-// 	router.push('/settings')
-// }
+onMounted(loadList);
 
-// const addSource = () => {
-// 	router.push('/add-source')
-// }
-
-const configureTask = () => {
-	router.push('/task-settings')
+// Обработчики действий
+function downloadTask(task: MediaFile.Data) {
+	alert(`Downloading ${task.fileName}`);
 }
 
-const deleteTask = (id) => {
-	tasks.value = tasks.value.filter(task => task.id !== id)
+function configureTask(task: MediaFile.Data) {
+	router.push({ name: 'task-settings', query: { id: task.id } });
+}
+
+async function deleteMediaFile(id: string) {
+	// const list = await bridge.deleteFile(id);	
 }
 </script>
 

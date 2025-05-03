@@ -7,8 +7,16 @@ import { MediaFile } from "./media-file";
  */
 export interface ElectronBridge {
   getSourceByUrl(url: string): Promise<MediaFile.SourceFile | MediaFile.SourcePlaylist>;
-  addSource(source: MediaFile.SourceFile): Promise<boolean>; // Replace 'any' with proper return type
-  getList(): Promise<Array<MediaFile.SourceFile>>;
+  addSource(source: MediaFile.Data): Promise<boolean>; // Replace 'any' with proper return type
+  getList(): Promise<Array<MediaFile.Data>>;
   // onConsoleLog(listener): void;
   // send: (channel: string, ...args: any[]) => any;
+}
+
+export function validateElectronBridge(bridge: ElectronBridge): boolean {
+  const methods: (keyof ElectronBridge)[] = Object.keys(bridge) as (keyof ElectronBridge)[];
+
+  // Check that all methods from the interface exist and are functions
+  console.log('[Bridge][Check] methods= ', methods?.join(', '))
+  return methods.every(method => typeof bridge[method] === 'function');
 }

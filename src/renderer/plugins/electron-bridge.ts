@@ -39,7 +39,7 @@
 
 import type { App } from 'vue';
 import { inject } from 'vue';
-import type { ElectronBridge } from '../../shared/types/electron-bridge';
+import { validateElectronBridge, type ElectronBridge } from '../../shared/types/electron-bridge';
 import { RIPIT_BRIDGE_NAME } from '../../shared/types/ipcConstants';
 
 export const ElectronBridgeKey = Symbol(RIPIT_BRIDGE_NAME);
@@ -69,8 +69,14 @@ export function useElectronBridge(): ElectronBridge {
 
 	// If bridge is still not found, throw an error
 	const bridge = window[RIPIT_BRIDGE_NAME] as ElectronBridge;
+
 	if (!bridge) {
 		throw new Error('ElectronBridge not provided');
 	}
+
+	if (!validateElectronBridge(bridge)) {
+		throw new Error('ElectronBridge provided, but some handlers are missing');
+	}
+
 	return bridge;
 }
