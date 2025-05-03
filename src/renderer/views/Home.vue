@@ -3,18 +3,20 @@
 		<div class="toolbar">
 			<n-space justify="space-between">
 				<div>
-					<n-checkbox v-model:checked="selectAll" @update:checked="toggleSelectAll">Выбрать все</n-checkbox>
+					<n-checkbox v-model:checked="selectAll" @update:checked="toggleSelectAll">
+						Select All
+					</n-checkbox>
 				</div>
 				<n-space>
 					<n-button size="small" @click="downloadSelectedFiles" :disabled="!selectedFiles.length || isDownloading">
-						Загрузить
+						Download
 						<n-icon v-if="isDownloading">
 							<loading />
 						</n-icon>
 					</n-button>
 					<n-button size="small" type="error" @click="deleteSelectedFiles"
 						:disabled="!selectedFiles.length || isDeleting">
-						Удалить
+						Delete
 						<n-icon v-if="isDeleting">
 							<loading />
 						</n-icon>
@@ -25,24 +27,77 @@
 
 		<n-list bordered>
 			<n-list-item v-for="file in mediaFiles" :key="file.id">
-				<n-space align="start" style="width: 100%">
-					<n-checkbox :checked="isSelected(file.id)" @update:checked="toggleSelectFile(file.id)" />
+				<n-collapse>
+					<n-collapse-item>
+						<!-- Заголовок плашки -->
+						<template #header>
+							<div class="list-item-header">
+								<div class="header-left">
+									<n-checkbox :checked="isSelected(file.id)" @update:checked="toggleSelectFile(file.id)" />
+								</div>
+								<div class="header-center">
+									<div class="file-name">{{ file.fileName || file.source.title }}</div>
 
+									<n-space size="small" align="center" wrap>
+										<n-tag type="info" :bordered="false">{{ file.source.extractor }} : {{ file.source.id }}</n-tag>
+										<!-- <n-tag type="info" :bordered="false">{{ file.source.id }}</n-tag> -->
 
-					<n-collapse style="flex: 1">
-						<n-collapse-item :title="file.fileName || 'Без имени'">
+										<n-tooltip trigger="hover">
+											<template #trigger>
+												<n-button quaternary size="tiny" @click.stop="copyUrl(file.source.webpageUrl)">
+													<template #icon>
+														<n-icon>
+															<CopyOutline />
+														</n-icon>
+													</template>
+												</n-button>
+											</template>
+											Copy URL to clipboard
+										</n-tooltip>
+
+										<n-tooltip trigger="hover">
+											<template #trigger>
+												<n-button quaternary size="tiny" @click.stop="openUrl(file.source.webpageUrl)">
+													<template #icon>
+														<n-icon>
+															<OpenOutline />
+														</n-icon>
+													</template>
+												</n-button>
+											</template>
+											Open in browser
+										</n-tooltip>
+									</n-space>
+
+									<n-space size="small" wrap>
+										<n-tooltip v-for="track in file.trackIds" :key="track.formatId" trigger="hover" placement="bottom">
+											<template #trigger>
+												<n-tag :type="getTrackType(track)" :bordered="false" size="small">
+													{{ track.formatId }}
+												</n-tag>
+											</template>
+											<span>{{ track.format }} / {{ track.ext }}</span>
+										</n-tooltip>
+									</n-space>
+
+								</div>
+
+								<div class="header-right">
+									<img :src="file.source.thumbnail" alt="Preview" v-if="file.source.thumbnail" />
+									<div v-else class="no-preview">Нет превью</div>
+								</div>
+							</div>
+						</template>
+
+						<!-- Детали при раскрытии -->
+						<div class="collapse-body">
 							<MediaFileDetails :file="file" />
 							<div class="edit-button">
 								<n-button size="small" @click="configureFile(file)">Редактировать</n-button>
 							</div>
-						</n-collapse-item>
-					</n-collapse>
-
-					<div class="preview">
-						<img :src="file.source.thumbnail" alt="Preview" v-if="file.source.thumbnail" />
-						<div v-else>Нет превью</div>
-					</div>
-				</n-space>
+						</div>
+					</n-collapse-item>
+				</n-collapse>
 			</n-list-item>
 		</n-list>
 	</div>
@@ -64,6 +119,10 @@ import {
 import { useElectronBridge } from '../plugins/electron-bridge';
 import type { MediaFile } from '../../shared/types/media-file';
 import MediaFileDetails from './MediaFileDetails.vue';
+import { CopyOutline, OpenOutline } from '@vicons/ionicons5'; // или любой другой набор иконок
+import { useMessage } from 'naive-ui';
+
+
 
 const router = useRouter();
 const bridge = useElectronBridge();
@@ -73,9 +132,7 @@ const selectAll = ref(false);
 const isDownloading = ref(false);
 const isDeleting = ref(false);
 
-onMounted(async () => {
-	await loadList();
-});
+onMounted(loadList);
 
 async function loadList() {
 	try {
@@ -86,7 +143,6 @@ async function loadList() {
 	}
 }
 
-// Toggle select individual file
 function toggleSelectFile(id: string) {
 	if (selectedIds.value.has(id)) {
 		selectedIds.value.delete(id);
@@ -95,12 +151,10 @@ function toggleSelectFile(id: string) {
 	}
 }
 
-// Check if file is selected
 function isSelected(id: string) {
 	return selectedIds.value.has(id);
 }
 
-// Toggle "Select All" checkbox
 function toggleSelectAll(checked: boolean) {
 	if (checked) {
 		selectedIds.value = new Set(mediaFiles.value.map((f) => f.id));
@@ -109,7 +163,6 @@ function toggleSelectAll(checked: boolean) {
 	}
 }
 
-// Watch for selectAll changes and update the selected files
 watch(selectAll, (val) => {
 	if (val) {
 		selectedIds.value = new Set(mediaFiles.value.map((f) => f.id));
@@ -122,7 +175,6 @@ const selectedFiles = computed(() =>
 	mediaFiles.value.filter((f) => selectedIds.value.has(f.id))
 );
 
-// Download selected files
 async function downloadSelectedFiles() {
 	isDownloading.value = true;
 	try {
@@ -134,12 +186,11 @@ async function downloadSelectedFiles() {
 	}
 }
 
-// Delete selected files
 async function deleteSelectedFiles() {
 	isDeleting.value = true;
 	try {
 		for (const file of selectedFiles.value) {
-			// await bridge.deleteFile(file.id); // Реализовать на стороне bridge
+			// await bridge.deleteFile(file.id); // TODO: реализация на стороне Electron
 		}
 		await loadList();
 	} finally {
@@ -147,10 +198,41 @@ async function deleteSelectedFiles() {
 	}
 }
 
-// Configure selected file
 function configureFile(file: MediaFile.Data) {
 	router.push({ name: 'task-settings', query: { id: file.id } });
 }
+
+function getTrackType(track: MediaFile.Track): 'success' | 'warning' | 'error' | 'default' {
+	switch (true) {
+		case track.hasVideo && track.hasAudio:
+			return 'error';
+		case track.hasVideo:
+			return 'success';
+		case track.hasAudio:
+			return 'warning';
+		default:
+			return 'default';
+	}
+}
+
+const message = useMessage();
+
+function copyUrl(url: string) {
+	navigator.clipboard.writeText(url).then(() => {
+		message.success('Ссылка скопирована');
+	}).catch(() => {
+		message.error('Ошибка копирования');
+	});
+}
+
+async function openUrl(url: string) {
+	try {
+		// await bridge.openExternal(url);
+	} catch (e) {
+		message.error('Не удалось открыть ссылку');
+	}
+}
+
 </script>
 
 <style scoped>
@@ -162,24 +244,63 @@ function configureFile(file: MediaFile.Data) {
 	margin-bottom: 12px;
 }
 
-.preview {
-	width: 240px;
-	max-width: 240px;
-	min-height: 80px;
+.list-item-header {
+	display: flex;
+	align-items: flex-start;
+	width: 100%;
+	gap: 16px;
+}
+
+.header-left {
+	padding-top: 4px;
+}
+
+.header-center {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	font-size: 14px;
+}
+
+.file-name {
+	font-weight: 600;
+}
+
+.source-line {
+	color: #888;
+}
+
+.track-ids {
+	color: #444;
+	font-size: 12px;
+}
+
+.header-right {
+	width: 180px;
+	height: 100px;
 	background: #f5f5f5;
 	display: flex;
-	align-items: center;
 	justify-content: center;
-	padding: 8px;
+	align-items: center;
 	overflow: hidden;
 }
 
-.preview img {
+.header-right img {
 	max-width: 100%;
 	max-height: 100%;
 	object-fit: contain;
 }
 
+.no-preview {
+	font-size: 12px;
+	color: #999;
+	text-align: center;
+}
+
+.collapse-body {
+	padding-top: 8px;
+}
 
 .edit-button {
 	margin-top: 10px;
