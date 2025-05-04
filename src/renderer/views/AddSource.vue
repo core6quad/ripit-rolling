@@ -118,6 +118,7 @@ async function checkSource() {
 
 async function addSource() {
 	if (!source.value || !selectedTracks.value) return;
+	// https://www.youtube.com/watch?v=WaEshTB4wrc
 
 	const fileName = "";
 
