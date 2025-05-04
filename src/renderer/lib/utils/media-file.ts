@@ -17,6 +17,7 @@ export function createMediaFile(
 	return {
 		id,
 		fileName,
+		status: 'Added',
 		trackIds: cloneDeep(trackIds),
 		size: 0,
 		created: 0, // created media file

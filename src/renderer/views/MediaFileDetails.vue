@@ -1,7 +1,11 @@
 <template>
 	<n-space vertical>
-		<n-descriptions title="Media File Information" size="small" bordered label-placement="left">
-			<n-descriptions-item label="File name">{{ file.fileName || 'not set' }}</n-descriptions-item>
+		<n-descriptions title="Media File Information" size="small" bordered label-placement="left" :column="3">
+			<n-descriptions-item label="Info">{{ '-' }}</n-descriptions-item>
+			<n-descriptions-item label="Size">{{ formatFileSize(file.size) }}</n-descriptions-item>
+			<n-descriptions-item label="Status">{{ 'Added' }}</n-descriptions-item>
+
+			<n-descriptions-item label="File name" :span="3">{{ file.fileName || 'not set' }}</n-descriptions-item>
 		</n-descriptions>
 
 		<n-descriptions title="Source Information" size="small" bordered label-placement="left" :column="3">
@@ -20,7 +24,7 @@
 
 			<n-descriptions-item label="Extractor:ID" :span="2">
 				{{ file.source.extractor }}:{{ file.source.id }}
-				<n-button quaternary size="tiny" @click.stop="copyUrl(file.source.extractor + ':' + file.source.id)">
+				<n-button quaternary size="small" @click.stop="copyUrl(file.source.extractor + ':' + file.source.id)">
 					<template #icon>
 						<n-icon>
 							<CopyOutline />
@@ -28,10 +32,10 @@
 					</template>
 				</n-button>
 			</n-descriptions-item>
-			<!-- <n-descriptions-item label="Source ID">{{ file.source.id }}</n-descriptions-item> -->
+
 			<n-descriptions-item label="Duration">{{ getDuration(file.source.duration) }}</n-descriptions-item>
 
-			<n-descriptions-item label="Uploaded by" :span="2">{{ file.source.uploader || '-' }}</n-descriptions-item>
+			<n-descriptions-item label="Uploader" :span="2">{{ file.source.uploader || '-' }}</n-descriptions-item>
 			<n-descriptions-item label="on">{{ Formatters.formatShortDate(file.source.uploadDate) }}</n-descriptions-item>
 
 			<n-descriptions-item label="Tracks" :span="3">
@@ -47,7 +51,7 @@
 						</template>
 						<span>
 							{{ track.format }} / {{ track.ext }} /
-							{{ formatFileSize(track.filesize) }}
+							{{ formatFileSize(track.filesize, 'stream') }}
 						</span>
 					</n-tooltip>
 				</n-space>
@@ -59,58 +63,6 @@
 		</n-descriptions>
 	</n-space>
 </template>
-
-<!-- <script setup lang="ts">
-import { computed } from 'vue';
-import type { MediaFile } from '../../shared/types/media-file';
-import { filesize } from 'filesize';
-
-function getTrackType(track: MediaFile.Track): 'success' | 'warning' | 'error' | 'default' {
-	switch (true) {
-		case track.hasVideo && track.hasAudio:
-			return 'error';
-		case track.hasVideo:
-			return 'success';
-		case track.hasAudio:
-			return 'warning';
-		default:
-			return 'default';
-	}
-}
-
-function formatFileSize(size?: number): string {
-	return size ? filesize(size) : 'stream';
-}
-
-const selectedFormatIds = computed(() =>
-  file.trackIds.map(track => track.formatId)
-);
-
-function isSelectedTrack(formatId: string): boolean {
-  return selectedFormatIds.value.includes(formatId);
-}
-
-// function formatFileSize(size?: number): string {
-// 	if (!size || size === 0) return 'stream';
-// 	const units = ['B', 'KB', 'MB', 'GB', 'TB'];
-// 	let i = 0;
-// 	let value = size;
-// 	while (value >= 1024 && i < units.length - 1) {
-// 		value /= 1024;
-// 		i++;
-// 	}
-// 	return `${value.toFixed(1)} ${units[i]}`;
-// }
-
-defineProps({
-	file: {
-		type: Object as () => MediaFile.Data,
-		required: true,
-	},
-});
-
-// const file = props.file;
-</script> -->
 
 <script setup lang="ts">
 import { computed } from 'vue';
@@ -153,9 +105,10 @@ function getTrackType(track: MediaFile.Track): 'success' | 'warning' | 'error' |
 }
 
 // Функция для форматирования размера файла
-function formatFileSize(size?: number): string {
-	return size ? filesize(size) : 'stream';
+function formatFileSize(size?: number, defaultValue = '-'): string {
+	return size ? filesize(size) : defaultValue;
 }
+
 const message = useMessage();
 
 function copyUrl(text: string) {
@@ -165,12 +118,12 @@ function copyUrl(text: string) {
 		message.error('Ошибка копирования');
 	});
 }
+
 function getDuration(seconds: number | unknown) {
 	const d = Formatters.toDuration(seconds);
 	return d
 		? `${d}(${seconds}s)`
 		: '-'
 }
-
 
 </script>

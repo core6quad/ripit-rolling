@@ -44,6 +44,7 @@ export const SourceFileSchema = z.object({
 // Schema for MediaFile.Data
 export const MediaDataSchema = z.object({
   id: z.string(),
+  status: z.string(),
   trackIds: z.array(TrackSchema),
   fileName: z.string(),
   size: z.number().optional(),
