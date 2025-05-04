@@ -2,13 +2,15 @@
 	<n-config-provider :theme="theme">
 		<div class="app-container">
 			<Header />
-			<router-view />
+			<n-message-provider>
+				<router-view />
+			</n-message-provider>
 		</div>
 	</n-config-provider>
 </template>
 
 <script setup>
-import { NConfigProvider } from 'naive-ui'
+import { NConfigProvider, NMessageProvider } from 'naive-ui'
 import Header from './components/Header.vue'
 import { lightTheme } from 'naive-ui'
 
