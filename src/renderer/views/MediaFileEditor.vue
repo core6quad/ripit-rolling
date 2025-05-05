@@ -1,5 +1,13 @@
 <template>
 	<n-card :title="isNew ? 'New Media File' : 'Edit Media File'" size="small">
+		<template #header-extra>
+			<n-space justify="end" style="width: 100%">
+				<n-button :type="isNew ? 'primary' : 'success'" :disabled="isButtonDisabled" @click="saveData">
+					{{ isNew ? 'Add file' : 'Apply changes' }}
+				</n-button>
+			</n-space>
+		</template>
+
 		<n-space vertical>
 			<!-- Basic info -->
 			<div>
@@ -11,16 +19,10 @@
 			<n-space justify="space-between">
 				<n-space vertical>
 					<div>ID: {{ data.source.extractor }}:{{ data.source.id }}</div>
-					<div>Uploader: {{ data.source.uploader || 'Unknown' }} @{{ Formatters.formatShortDate(data.source.uploadDate)
-					}}</div>
+					<div>Uploader: {{ data.source.uploader || 'Unknown' }} @{{ Formatters.formatShortDate(data.source.uploadDate) }}</div>
 					<div>Duration: {{ getDuration(data.source.duration) }}</div>
-					<div>Status: {{ isNew ? 'New' :data.status }}</div>
+					<div>Status: {{ isNew ? 'New' : data.status }}</div>
 				</n-space>
-
-				<div class="header-right">
-					<img :src="data.source.thumbnail" alt="Preview" v-if="data.source.thumbnail" />
-					<div v-else class="no-preview">No preview</div>
-				</div>
 			</n-space>
 
 			<!-- File name section -->
@@ -28,7 +30,7 @@
 				<n-text strong>File name</n-text>
 			</div>
 
-			<n-input v-model:value="data.fileName" placeholder="Enter file name" style="flex: 1 1 auto" />
+			<n-input v-model:value="data.fileName" placeholder="Enter file name" style="flex: 1 1 auto" :status="fileNameInvalid ? 'error' : undefined" />
 
 			<!-- Preset tags -->
 			<n-space wrap size="small">
@@ -38,25 +40,21 @@
 				</n-tag>
 			</n-space>
 
-			<!-- File name editor with reset -->
-			<!-- <n-flex justify="space-between" align="center" style="width: 100%" :wrap="false" :gap="8">
-				<n-input v-model:value="data.fileName" placeholder="Enter file name" style="flex: 1 1 auto" />
-				<n-button quaternary size="small" @click="resetFileName" :title="defaultFileName">
-					<template #icon>
-						<n-icon>
-							<RefreshOutline />
-						</n-icon>
+			<!-- Track selector with tooltip -->
+			<div>
+				<n-tooltip trigger="hover" placement="bottom" :style="{ maxWidth: '200px', whiteSpace: 'normal' }">
+					<template #trigger>
+						<n-text strong>Select tracks</n-text>
 					</template>
-Reset
-</n-button>
-</n-flex> -->
+					<span>Select tracks that will be downloaded. These tracks will only be applied at the time of download and will not affect previously downloaded files if modified later.</span>
+				</n-tooltip>
+			</div>
 
-			<!-- Track selector -->
 			<track-selector :tracks="data.source.tracks" v-model="data.trackIds" />
 
 			<!-- Save button -->
 			<template #footer>
-				<n-button type="success" :disabled="data.trackIds.length === 0" @click="saveData">
+				<n-button type="success" :disabled="fileNameInvalid || data.trackIds.length === 0" @click="saveData">
 					Save
 				</n-button>
 			</template>
@@ -64,12 +62,14 @@ Reset
 	</n-card>
 </template>
 
+
 <script setup lang="ts">
 import { ref, computed, defineProps, defineEmits } from 'vue';
 import { MediaFile } from '../../shared/types/media-file';
 import TrackSelector from './TrackSelector.vue';
 import { Formatters } from '../lib/utils/formatters';
 import { RefreshOutline } from '@vicons/ionicons5';
+import { cloneDeep } from 'lodash';
 
 const props = defineProps<{
 	data: MediaFile.Data;
@@ -88,18 +88,13 @@ const defaultFileName = computed(() =>
 	`${data.value.source.title} [${data.value.source.extractor}][${data.value.source.id}]`
 );
 
-function resetFileName() {
-	data.value.fileName = defaultFileName.value;
-}
+// Check if the file name is valid
+const fileNameInvalid = computed(() => {
+	const regex = /^[a-zA-Z0-9 ._\-\[\]()#&@]+$/;
+	return !regex.test(data.value.fileName);
+});
 
-function saveData() {
-	emit('save', data.value);
-}
-
-function getDuration(seconds: number | unknown) {
-	const d = Formatters.toDuration(seconds);
-	return d ? `${d} (${seconds}s)` : '-';
-}
+const isButtonDisabled = computed(() => fileNameInvalid.value || data.value.trackIds.length === 0);
 
 // Preset filename generators
 const fileNamePresets: Array<{
@@ -132,6 +127,18 @@ const fileNamePresets: Array<{
 				Formatters.sanitizeFileName(d.source.title) + `[${d.source.id}]`,
 		},
 	];
+
+// Function to save data and notify parent
+function saveData() {
+	const saveData: MediaFile.Data = cloneDeep(data.value);
+	// console.log('[UI][Editor] Save, data=', saveData)
+	emit('save', saveData);
+}
+
+function getDuration(seconds: number | unknown) {
+	const d = Formatters.toDuration(seconds);
+	return d ? `${d} (${seconds}s)` : '-';
+}
 
 </script>
 

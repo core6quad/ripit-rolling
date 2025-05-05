@@ -1,105 +1,96 @@
-/**
- * yt-dlp.parser.ts
- *
- * This file provides a function to execute yt-dlp using a specified binary path and URL,
- * and return parsed metadata as either a MediaFile.SourceFile or MediaFile.SourcePlaylist.
- */
-
-import { spawn } from 'child_process';
+import { execFile } from 'child_process';
+import { promisify } from 'util';
 import { MediaFile } from '../../../shared/types/media-file';
+import { SourceFileSchema } from '../../utils/validation/media-schemas.zod';
+import { YDBMappers } from './mappers';
 
+const execFileAsync = promisify(execFile);
+
+const MAX_BUFFER_SIZE = 3 * 1024 * 1024; // 3 MB
+
+/**
+ * Extracts lightweight information about a media URL (playlist or single video)
+ * using yt-dlp with `--flat-playlist` and `--dump-single-json` for fast detection.
+ *
+ * @param url - The media URL to check.
+ * @returns A `MediaFile.UrlInfo` object with type, count, and optional metadata.
+ */
+export async function getPlaylistInfo(ytDlpPath: string, url: string): Promise<MediaFile.UrlInfo> {
+	try {
+		const { stdout } = await execFileAsync(ytDlpPath, [
+			'--dump-single-json',
+			'--flat-playlist',
+			url,
+		]);
+
+		const data = JSON.parse(stdout);
+		const info: MediaFile.UrlInfo = YDBMappers.mapToUrlInfo(data);
+
+		return info;
+	} catch (error: any) {
+		return {
+			type: 'error',
+			count: 0,
+			error: error.message || String(error),
+		};
+	}
+}
+
+/**
+ * Parses detailed media metadata from yt-dlp for a given URL.
+ * - Returns `MediaFile.SourceFile` for a single video.
+ * - Returns `MediaFile.UrlInfo` if the URL is a playlist, multi-video, or in error.
+ *
+ * @param ytDlpPath - Path to the yt-dlp binary
+ * @param url - Media URL to analyze
+ * @returns A promise resolving to `SourceFile` or `UrlInfo`
+ */
 export async function getFileInfoFromYtDlp(
 	ytDlpPath: string,
 	url: string
-): Promise<MediaFile.SourceFile | MediaFile.SourcePlaylist> {
-	console.log('[Parser] started')
-	return new Promise((resolve, reject) => {
-		const proc = spawn(ytDlpPath, ['--dump-single-json', url]);
+): Promise<MediaFile.SourceFile | MediaFile.UrlInfo> {
+	try {
+		// Step 1: Get lightweight playlist or video info
+		const playlistInfo = await getPlaylistInfo(ytDlpPath, url);
 
-		let stdout = '';
-		let stderr = '';
+		console.log('[Parser] UrlInfo=', playlistInfo)
 
-		proc.stdout.on('data', (data) => {
-			stdout += data.toString();
+		// If it's a playlist or multiple videos, return UrlInfo
+		if (playlistInfo.type !== 'video') {
+			return playlistInfo;
+		}
+
+		// Step 2: If it's a single video, get detailed video info
+		const { stdout } = await execFileAsync(ytDlpPath, ['--dump-single-json', url], {
+			maxBuffer: MAX_BUFFER_SIZE,
 		});
 
-		proc.stderr.on('data', (data) => {
-			stderr += data.toString();
-		});
+		const json = JSON.parse(stdout);
+		console.log('[Parser] Source=', json)
 
-		// 1. Log to console
-		// proc.stdout.on('data', (data) => {
-		// 	process.stdout.write(`[stdout] ${data}`);
-		// });
+		// Map to SourceFile and validate using Zod schema
+		const sourceFile: MediaFile.SourceFile = YDBMappers.mapToSourceFile(json);
+		// if (playlistInfo?.channelId) {
+		// 	sourceFile.channelId = playlistInfo.channelId;
+		// }
+		console.log('[Parser] sourceFile=', sourceFile);
 
-		// proc.stderr.on('data', (data) => {
-		// 	process.stderr.write(`[stderr] ${data}`);
-		// });
+		const validationResult = SourceFileSchema.safeParse(sourceFile);
+		console.log('[Parser] validationResult=', validationResult);
+		if (!validationResult.success) {
+			const validationErrors = validationResult.error.issues.map(
+				(issue) => `${issue.path.join('.')}: ${issue.message}`
+			).join('; ');
+			throw new Error(`SourceFile validation failed: ${validationErrors}`);
+		}
 
-		proc.on('close', (code) => {
-			if (code !== 0) {
-				return reject(new Error(`yt-dlp exited with code ${code}\n${stderr}`));
-			}
-
-			try {
-				const json = JSON.parse(stdout);
-				const extractor = json.extractor ?? json.extractor_key ?? 'unknown';
-
-				// Check if it's a playlist
-				if (json._type === 'playlist') {
-					const playlist: MediaFile.SourcePlaylist = {
-						id: json.id,
-						title: json.title,
-						extractor,
-						webpageUrl: json.webpage_url,
-						entries: (json.entries || []).map(parseSingleEntry),
-					};
-					resolve(playlist);
-				} else {
-					resolve(parseSingleEntry(json));
-				}
-			} catch (err) {
-				reject(new Error(`Failed to parse yt-dlp JSON: ${(err as Error).message}`));
-			}
-		});
-	});
+		return validationResult.data as MediaFile.SourceFile;
+	} catch (error: any) {
+		return {
+			type: 'error',
+			count: 0,
+			error: error.message || String(error),
+		};
+	}
 }
 
-/**
- * Converts a single media entry JSON object into MediaFile.SourceFile
- */
-function parseSingleEntry(json: any): MediaFile.SourceFile {
-	const tracks: MediaFile.Track[] = (json.formats || []).map((f: any) => ({
-		formatId: f.format_id,
-		format: f.format,
-		ext: f.ext,
-		vcodec: f.vcodec,
-		acodec: f.acodec,
-		width: f.width,
-		height: f.height,
-		fps: f.fps,
-		tbr: f.tbr,
-		abr: f.abr,
-		vbr: f.vbr,
-		asr: f.asr,
-		filesize: f.filesize || f.filesize_approx,
-		url: f.url,
-		hasAudio: f.vcodec === 'none' && f.acodec !== 'none',
-		hasVideo: f.vcodec !== 'none',
-	}));
-
-	return {
-		id: json.id,
-		title: json.title,
-		extractor: json.extractor ?? json.extractor_key ?? 'unknown',
-		playlistId: json.playlist_id ?? undefined,
-		uploader: json.uploader,
-		uploadDate: json.upload_date,
-		duration: json.duration,
-		description: json.description,
-		webpageUrl: json.webpage_url,
-		thumbnail: json.thumbnail,
-		tags: json.tags,
-		tracks,
-	};
-}

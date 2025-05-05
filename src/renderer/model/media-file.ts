@@ -1,7 +1,8 @@
-import { MediaFile } from "../../../shared/types/media-file";
+import { MediaFile } from "../../shared/types/media-file";
 
 import { v4 as uuidv4 } from 'uuid';
 import { cloneDeep } from 'lodash';
+import { YDU } from "./constants";
 
 export function createMediaFile(
 	fileName: string,
@@ -16,6 +17,7 @@ export function createMediaFile(
 
 	return {
 		id,
+		version: YDU.DATA_CURRENT_FORMAT_VERSION,
 		fileName,
 		status: 'Added',
 		trackIds: cloneDeep(trackIds),

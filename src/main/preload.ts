@@ -7,7 +7,7 @@ import { IPCConstantsInvoke, IPCConstantsOn } from '../shared/types/ipcConstants
 export const RIPIT_BRIDGE_NAME = 'electronBridge';
 
 export const rawInvokeMap = {
-	CID_GET_SOURCE_INFO: {} as MediaFile.SourceFile | MediaFile.SourcePlaylist,
+	CID_GET_SOURCE_INFO: {} as MediaFile.SourceFile | MediaFile.UrlInfo,
 	CID_ADD_SOURCE: true,
 	CID_GET_LIST: null,
 } satisfies Record<IPCConstantsInvoke, unknown>;

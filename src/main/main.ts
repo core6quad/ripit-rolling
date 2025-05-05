@@ -42,7 +42,7 @@ app.whenReady().then(async () => {
 		mainWindow.loadFile(indexFile);
 
 		console.log('[Loading] open devTools');
-		mainWindow.webContents.openDevTools();
+		mainWindow.webContents.openDevTools({ mode: 'right' });
 
 		contextMenu({
 			showSaveImageAs: true,

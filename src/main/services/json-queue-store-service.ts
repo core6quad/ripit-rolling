@@ -72,7 +72,7 @@ export class JsonQueueStore extends QueueStore {
 			}
 
 			// Используем validateAndCloneMediaFiles
-			console.log('[QueueService][loadStore] loaded', parsed);
+			console.log('[QueueService][loadStore] loaded length=', parsed?.length);
 			const { valid, invalid } = MediaFileValidation.validatedClone(parsed);
 
 			validQueue = valid;

@@ -37,7 +37,7 @@
 								</div>
 								<div class="header-center">
 									<div class="file-name">
-										<n-ellipsis :line-clamp="2">{{ file.source.title}}</n-ellipsis>
+										<n-ellipsis :line-clamp="2">{{ file.source.title }}</n-ellipsis>
 									</div>
 
 									<n-space size="small" align="center" wrap>
@@ -235,7 +235,6 @@ async function openUrl(url: string) {
 		message.error('Не удалось открыть ссылку');
 	}
 }
-
 </script>
 
 <style scoped>
