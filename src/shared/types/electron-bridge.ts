@@ -6,7 +6,7 @@ import { MediaFile } from "./media-file";
  * across all interactions between the renderer and main process.
  */
 export interface ElectronBridge {
-  getSourceByUrl(url: string): Promise<MediaFile.SourceFile | MediaFile.SourcePlaylist>;
+  getSourceByUrl(url: string): Promise<MediaFile.SourceFile | MediaFile.UrlInfo>;
   addSource(source: MediaFile.Data): Promise<boolean>; // Replace 'any' with proper return type
   getList(): Promise<Array<MediaFile.Data>>;
   // onConsoleLog(listener): void;

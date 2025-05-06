@@ -5,47 +5,30 @@
 				<!-- Input and Check button -->
 				<n-input-group>
 					<n-input v-model:value="url" placeholder="Enter video URL" clearable @keyup.enter="checkSource" />
-
 					<n-button :loading="loading" :disabled="!url.trim() || loading" @click="checkSource" type="primary">
 						<template #icon>
-							<n-icon v-if="loading">
-								<n-spin />
-							</n-icon>
+							<n-icon v-if="loading"><n-spin /></n-icon>
 							<n-icon v-else>
 								<InformationCircleOutline />
 							</n-icon>
 						</template>
-						Check
+						Get Url Info
 					</n-button>
 				</n-input-group>
 
-				<!-- Error message -->
+				<!-- Error -->
 				<n-alert v-if="error" type="error" title="Error" :show-icon="true" closable @close="error = null">
 					{{ error }}
 				</n-alert>
 
-				<!-- Source preview area -->
+				<!-- Result -->
 				<div class="source-info">
-					<template v-if="source">
-						<n-card title="Video Info" size="small">
-							<n-space vertical>
-								<div><strong>{{ source.title }}</strong></div>
-								<div>ID: {{ source.id }}</div>
-								<div>Uploader: {{ source.uploader || 'Unknown' }}</div>
-								<div>Duration: {{ source.duration || 'N/A' }} sec</div>
-								<div>Formats: {{ source.tracks.length }}</div>
-								<img v-if="source?.thumbnail" :src="source.thumbnail" alt="Thumbnail" width="360px" />
-
-								<!-- Display tracks with checkbox selection -->
-								<track-selector v-if="source.tracks.length > 0" :tracks="source.tracks" v-model="selectedTracks" />
-							</n-space>
-
-							<template #footer>
-								<n-button type="success" :disabled="selectedTracks.length === 0" @click="addSource">
-									Add
-								</n-button>
-							</template>
-						</n-card>
+					<!-- <template v-if="mediaData">
+						<media-file-editor :data="mediaData" :isNew="true" @save="handleSaveData" />
+					</template> -->
+					<template v-if="mediaData">
+						<!-- Media File Editor -->
+						<media-file-editor :data="mediaData" :isNew="true" @save="handleSaveData" />
 					</template>
 					<template v-else>
 						<n-empty description="Video info will appear here once checked" />
@@ -57,57 +40,91 @@
 </template>
 
 <script setup lang="ts">
-import { readonly, ref } from 'vue';
+import { Ref, ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { NInput, NButton, NInputGroup, NCard, NAlert, NSpace, NEmpty, NIcon, NSpin } from 'naive-ui';
+import {
+	NInput,
+	NButton,
+	NInputGroup,
+	NCard,
+	NAlert,
+	NSpace,
+	NEmpty,
+	NIcon,
+	NSpin,
+	useMessage,
+} from 'naive-ui';
 import { useElectronBridge } from '../plugins/electron-bridge';
 import { InformationCircleOutline } from '@vicons/ionicons5';
-import TrackSelector from './TrackSelector.vue';
+
 import { MediaFile } from '../../shared/types/media-file';
-import { createMediaFile } from '../lib/utils/media-file';
+import MediaFileEditor from './MediaFileEditor.vue';
+import { createMediaFile } from '../model/media-file';
+import { Formatters } from '../lib/utils/formatters';
+// import { mockedSource } from './mock';
+// import { mock2 } from './mock2';
+const message = useMessage();
 
 const url = ref('');
 const error = ref<string | null>(null);
-const source = ref<MediaFile.SourceFile | null>(null);
-// const source = readonly(_source);
-
 const loading = ref(false);
 
-const selectedTracks = ref<MediaFile.Track[]>([]);
+// Final editable media data
+const mediaData = ref<MediaFile.Data | null>(null);
 
 const router = useRouter();
 
-async function getSourceInfo(url: string): Promise<MediaFile.SourceFile | MediaFile.SourcePlaylist> {
+// async function getSourceInfo(url: string): Promise<MediaFile.SourceFile> {
+// 	const bridge = useElectronBridge();
+// 	const result = await bridge.getSourceByUrl(url);
+
+// 	if ('type' in result && result.type !== 'video') {
+// 		throw new Error(`Unsupported media type: ${result.type}`);
+// 	}
+
+// 	// now it's safe to assume it's a SourceFile
+// 	return result as MediaFile.SourceFile;
+// }
+
+/**
+ * Gets media source info from backend.
+ * If it's a valid single file, returns SourceFile.
+ * Otherwise shows an error and returns null.
+ */
+async function getSourceInfo(url: string): Promise<MediaFile.SourceFile | null> {
+	// return mock2 as any; 
 	const bridge = useElectronBridge();
-	return await bridge.getSourceByUrl(url);
+	const result = await bridge.getSourceByUrl(url);
+
+	if ('type' in result && result.type !== 'video') {
+		showUrlInfoError(result);
+		return null;
+	}
+
+	return result as MediaFile.SourceFile;
 }
 
-async function addSourceToLibrary(data: MediaFile.Data): Promise<boolean> {
-	const bridge = useElectronBridge();
-	console.log('[UI][Add]', { bridge, data, isExist: !!bridge.addSource });
-	return await bridge.addSource(data);
-}
 
 async function checkSource() {
 	error.value = null;
-	source.value = null;
-	selectedTracks.value = [];
+	mediaData.value = null;
 	loading.value = true;
+
 	try {
 		const result = await getSourceInfo(url.value.trim());
 
-		console.log('[UI][checkSource] result', result);
-
-		// if ('error' in result) {
-		// 	error.value = result.error;
-		// } else 
-
-
+		if (!result) return; // Stop on playlist or error
 
 		if ('entries' in result) {
 			error.value = 'Playlists are not supported yet.';
 		} else {
-			source.value = result;
+			const source = result;
+			const defaultFileName = `${Formatters.sanitizeFileName(source.title)} [${source.extractor}][${source.id}]`;
+
+			// Construct editable media data
+			const data: MediaFile.Data = createMediaFile(defaultFileName, [], source);
+
+			mediaData.value = data;
 		}
 	} catch (err: any) {
 		error.value = 'Failed to fetch media info: ' + err.message;
@@ -116,19 +133,16 @@ async function checkSource() {
 	}
 }
 
-async function addSource() {
-	if (!source.value || !selectedTracks.value) return;
-
-	const fileName = "";
-
-	console.log({ source });
-	const data: MediaFile.Data = createMediaFile(fileName, selectedTracks.value, source.value);
-
-	console.log({ data });
-
+// Handle saving data
+async function handleSaveData(data: MediaFile.Data) {
 	try {
-		const ok = await addSourceToLibrary(data);
-		if (ok) {
+		// Logic for saving the data, i.e., add to the database, etc.
+		const bridge = useElectronBridge();
+		console.log('[UI][Add File] data=', data);
+
+		const success = await bridge.addSource(data);
+
+		if (success) {
 			router.push('/');
 		} else {
 			error.value = 'Failed to add media source.';
@@ -137,6 +151,41 @@ async function addSource() {
 		error.value = 'Error adding source: ' + err.message;
 	}
 }
+
+
+/**
+ * Displays an error notification for unsupported or invalid URL info.
+ * @param info The returned UrlInfo object from yt-dlp
+ */
+//  function showUrlInfoError(info: MediaFile.UrlInfo) {
+// 	const details = [
+// 		info.error ? `Error: ${info.error}` : null,
+// 		info.title ? `Title: ${info.title}` : null,
+// 		info.uploader ? `Uploader: ${info.uploader}` : null,
+// 		`Detected Type: ${info.type}`,
+// 		`Entries Count: ${info.count}`,
+// 	].filter(Boolean).join('\n');
+
+// 	message.error(
+// 		`The provided URL is not a valid single media source.\n\n${details}`,
+// 		{ duration: 8000 }
+// 	);
+// }
+function showUrlInfoError(info: MediaFile.UrlInfo) {
+	// REWORK! Error message
+	const details = [
+		info.error ? `Error: ${info.error}` : null,
+		info.title ? `Title: ${info.title}` : null,
+		info.uploader ? `Uploader: ${info.uploader}` : null,
+		`Detected Type: ${info.type}`,
+		`Entries Count: ${info.count}`,
+	].filter(Boolean).join('\n');
+
+	error.value = `
+    The provided URL is not a valid single media source.\n\n${details}
+  `;
+}
+
 </script>
 
 <style scoped>

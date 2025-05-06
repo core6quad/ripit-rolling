@@ -36,7 +36,9 @@
 									<n-checkbox :checked="isSelected(file.id)" @update:checked="toggleSelectFile(file.id)" />
 								</div>
 								<div class="header-center">
-									<div class="file-name">{{ file.fileName || file.source.title }}</div>
+									<div class="file-name">
+										<n-ellipsis :line-clamp="2">{{ file.source.title }}</n-ellipsis>
+									</div>
 
 									<n-space size="small" align="center" wrap>
 										<n-tag type="info" :bordered="false">{{ file.source.extractor }} : {{ file.source.id }}</n-tag>
@@ -73,6 +75,7 @@
 										<n-tooltip v-for="track in file.trackIds" :key="track.formatId" trigger="hover" placement="bottom">
 											<template #trigger>
 												<n-tag :type="getTrackType(track)" :bordered="false" size="small">
+													<n-icon :component="CheckmarkCircle" />
 													{{ track.formatId }}
 												</n-tag>
 											</template>
@@ -119,7 +122,7 @@ import {
 import { useElectronBridge } from '../plugins/electron-bridge';
 import type { MediaFile } from '../../shared/types/media-file';
 import MediaFileDetails from './MediaFileDetails.vue';
-import { CopyOutline, OpenOutline } from '@vicons/ionicons5'; // или любой другой набор иконок
+import { CheckmarkCircle, CopyOutline, OpenOutline } from '@vicons/ionicons5'; // или любой другой набор иконок
 import { useMessage } from 'naive-ui';
 
 
@@ -232,7 +235,6 @@ async function openUrl(url: string) {
 		message.error('Не удалось открыть ссылку');
 	}
 }
-
 </script>
 
 <style scoped>

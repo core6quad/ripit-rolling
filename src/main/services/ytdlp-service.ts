@@ -21,7 +21,7 @@ export class YTDLPService {
 		}
 	}
 
-	public getSourceInfo: (_event: Electron.IpcMainInvokeEvent, url: string) => Promise<MediaFile.SourceFile | MediaFile.SourcePlaylist> =
+	public getSourceInfo: (_event: Electron.IpcMainInvokeEvent, url: string) => Promise<MediaFile.SourceFile | MediaFile.UrlInfo> =
 		async (_event, url) => getFileInfoFromYtDlp(RIPIT_YT_DLP_RUN, url);
 
 }
