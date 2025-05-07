@@ -15,8 +15,8 @@
  */
 
 import { MediaFile } from '../../shared/types/media-file';
+import { TaskProc } from '../../shared/types/task-processor';
 import { RIPIT_YT_DLP_RUN } from '../init/init';
-import { TaskHandler } from '../lib/task-processor/model';
 import { execFileWithAbort } from '../lib/task-processor/run-with-abort';
 import { YDBMappers } from '../lib/yt-dlp/mappers';
 import { SourceFileSchema } from '../utils/validation/media-schemas.zod';
@@ -38,42 +38,44 @@ interface AnalyzeMediaPayload {
  * @returns A `MediaFile.UrlInfo` object with type, count, and optional metadata.
  */
 export async function getPlaylistInfo(url: string, signal: AbortSignal): Promise<MediaFile.UrlInfo> {
-	try {
-		const playlistResult = await execFileWithAbort({
-			file: RIPIT_YT_DLP_RUN,
-			args: ['--dump-single-json', '--flat-playlist', url],
-			signal,
-		});
-		console.log('[getPlaylistInfo][!]', { playlistResult });
-		if (playlistResult.aborted) {
-			return null;
-		}
-		if (playlistResult?.code !== 0) {
-			throw new Error(playlistResult?.stderr);
-		}
-		console.log('[getPlaylistInfo][!]', { playlistResult });
-		const data = JSON.parse(playlistResult?.stdout);
-		const info: MediaFile.UrlInfo = YDBMappers.mapToUrlInfo(data);
+	// try {
+	const playlistResult = await execFileWithAbort({
+		file: RIPIT_YT_DLP_RUN,
+		args: ['--dump-single-json', '--flat-playlist', url],
+		signal,
+	});
 
-		return info;
-	} catch (e) {
-		console.log('[getPlaylistInfo][ERROR]', e);
+	console.log('[getPlaylistInfo][!]', { playlistResult });
+	if (playlistResult.aborted) {
+		return null;
 	}
+	if (playlistResult?.code !== 0) {
+		throw new Error(playlistResult?.stderr);
+	}
+	console.log('[getPlaylistInfo][!]', { playlistResult });
+	const data = JSON.parse(playlistResult?.stdout);
+	const info: MediaFile.UrlInfo = YDBMappers.mapToUrlInfo(data);
+
+	return info;
+	// } catch (e) {
+	// 	console.log('[getPlaylistInfo][ERROR]', e);
+	// }
 }
 /**
  * TaskHandler implementation to analyze media info via yt-dlp.
  * Emits progress and result events back to the renderer process.
  */
-export const analyzeMediaInfoTask: TaskHandler = async ({ payload, signal, emit }) => {
+export const analyzeMediaInfoTask: TaskProc.Handler = async ({ payload, signal, emit }) => {
 	const { url } = payload as AnalyzeMediaPayload;
 
 	console.log('[TSK][analyzeMediaInfo][start]', { url })
 
 	try {
 		// Emit initial progress
-		emit({ type: 'progress', payload: 'Step 1/2. Detecting media type...' });
+		emit({ type: 'progress', payload: 'Step 1/2. Detecting media type' });
 
-		console.log('[TSK][analyzeMediaInfo][step 1]')
+		// console.log('[TSK][analyzeMediaInfo][step 1]')
+
 		// Step 1: Quickly determine if it's a playlist or a video
 		// const playlistResult = await execFileWithAbort({
 		// 	file: RIPIT_YT_DLP_RUN,
@@ -82,12 +84,11 @@ export const analyzeMediaInfoTask: TaskHandler = async ({ payload, signal, emit 
 		// });
 		const playlistInfo = await getPlaylistInfo(url, signal);
 		if (signal.aborted) {
-			// aborted -  can we skip it?
 			emit({ type: 'cancelled', payload: null });
 			return;
 		}
 
-		console.log('[TSK][analyzeMediaInfo][step 1][res]', { playlistInfo })
+		// console.log('[TSK][analyzeMediaInfo][step 1][res]', { playlistInfo })
 
 		// Emit parsed detection info
 		// emit({ type: 'progress', payload: playlistInfo });
@@ -114,8 +115,8 @@ export const analyzeMediaInfoTask: TaskHandler = async ({ payload, signal, emit 
 			args: ['--dump-single-json', url],
 			signal,
 		});
+
 		if (signal.aborted) {
-			// aborted -  can we skip it?
 			emit({ type: 'cancelled', payload: null });
 			return;
 		}
@@ -138,8 +139,15 @@ export const analyzeMediaInfoTask: TaskHandler = async ({ payload, signal, emit 
 		// Emit the validated result
 		emit({ type: 'result', payload: validation.data });
 	} catch (err: any) {
+
+		console.log('[TSK][analyzeMediaInfo][ERROR]', { err, aborted: signal.aborted })
+
+		if (signal.aborted) {
+			emit({ type: 'cancelled', payload: null });
+			return;
+		}
+
 		// Emit structured error in case of failure
-		console.log('[TSK][analyzeMediaInfo][ERROR]', { err })
 		emit({
 			type: 'error',
 			payload: {

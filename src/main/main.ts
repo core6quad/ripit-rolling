@@ -1,18 +1,19 @@
-import { app, BrowserWindow, ipcMain, dialog, shell, contextBridge, ipcRenderer } from "electron";
+import { app, BrowserWindow, ipcMain, dialog } from "electron";
 import * as path from "path";
-import contextMenu from 'electron-context-menu';
+import contextMenu from "electron-context-menu";
 import { fileExists } from "./utils/file-checks";
 import { appInit } from "./init/init";
 import { serviceContainer } from "./services/service-container";
-import { allConstantsInvoke } from "../shared/types/ipcConstants";
 import { TaskProcessor } from "./lib/task-processor/task-processor";
 import { analyzeMediaInfoTask } from "./tasks/analyze-media-info-task";
+import { validateIpcInvokeHandlers } from "./utils/brige-checker";
 
-const RIPIT_INDEX_FILE = 'index.html';
+const RIPIT_INDEX_FILE = "index.html";
 
-// app.on("ready", async () => {
+// Called when the Electron app is ready
 app.whenReady().then(async () => {
 	try {
+		// Create the main application window
 		const mainWindow = new BrowserWindow({
 			width: 800,
 			height: 600,
@@ -27,42 +28,46 @@ app.whenReady().then(async () => {
 				// enableRemoteModule: false,
 			},
 		});
-		console.log('[Loading] open devTools');
-		mainWindow.webContents.openDevTools({ mode: 'right' });
 
-		console.log('[Loading] mainWindow created');
+		console.log("[Loading] open devTools");
+		mainWindow.webContents.openDevTools({ mode: "right" });
 
-		// Initialize TaskProcessor after mainWindow is ready
+		console.log("[Loading] mainWindow created");
+
+		// Initialize a task processor to handle background tasks
 		const taskProcessor = new TaskProcessor((event) => {
-			// Send event updates back to the renderer process
-			// console.log('[TaskProcessor][emit]:', event);
-			mainWindow.webContents.send('CID_ON_TASK_PROCESSOR_EVENT', event);
+			// Send task events to the renderer
+			mainWindow.webContents.send("CID_ON_TASK_PROCESSOR_EVENT", event);
 		});
 
 		// Register supported task types
-		// taskProcessor.register('download', exampleDownloadTask);
-		taskProcessor.register('analyze-media-info', analyzeMediaInfoTask);
+		taskProcessor.register("analyze-media-info", analyzeMediaInfoTask);
 
-		ipcMain.handle('CID_RUN_TASK', async (event, task: { type: string; payload: any }) => {
+		// Register IPC handler to run a task
+		ipcMain.handle("CID_RUN_TASK", async (event, task: { type: string; payload: any }) => {
 			const { type, payload } = task;
 			try {
 				const taskId = taskProcessor.run(task);
 				return taskId;
 			} catch (err) {
 				console.error(`Failed to start task of type "${type}"`, err);
-				throw err; // will be catched on UI side
+				throw err; // This error will propagate to the renderer
 			}
 		});
 
-		ipcMain.handle('CID_ABORT_TASK', async (event, taskId: string) => {
+		// Register IPC handler to abort a task
+		ipcMain.handle("CID_ABORT_TASK", async (event, taskId: string) => {
 			const success = taskProcessor.abort(taskId);
 			return { success };
 		});
 
-		// services init
-		serviceContainer.registerCoreServices(() => mainWindow)
-		await serviceContainer.consoleService; // create service on first access
+		// Register core application services and expose mainWindow to them
+		serviceContainer.registerCoreServices(() => mainWindow);
 
+		// Trigger lazy initialization of consoleService
+		await serviceContainer.consoleService;
+
+		// Validate index.html existence to ensure application integrity
 		const root = __dirname?.slice(0, -5);
 		const indexFile = path.join(root, RIPIT_INDEX_FILE);
 		const fileExist = await fileExists(indexFile);
@@ -70,52 +75,38 @@ app.whenReady().then(async () => {
 			throw new Error(`Application integrity check failed: index file not found at ${indexFile}`);
 		}
 
-		console.log('[Loading] index file:', indexFile);
+		console.log("[Loading] index file:", indexFile);
 		mainWindow.loadFile(indexFile);
 
+		// Enable right-click context menu with useful options
 		contextMenu({
 			showSaveImageAs: true,
 			showCopyImage: true,
 			showInspectElement: true,
 		});
 
-		// IPC handlers
-		// ipcMain.handle("file-check", getFileSize);
-
-		console.log('[Loading][ytdlpService] run');
+		// Initialize custom services
+		console.log("[Loading][ytdlpService] run");
 		await (await serviceContainer.ytdlpService).handleAll();
 
-		console.log('[Loading][queueService] run');
+		console.log("[Loading][queueService] run");
 		const queueService = await serviceContainer.queueService;
 		await queueService.init();
 		await queueService.handleAll();
 
+		// Validate that all expected IPC handlers are registered
 		validateIpcInvokeHandlers();
 
-		console.log('[Loading] App init');
+		// Final app-level initialization logic
+		console.log("[Loading] App init");
 		try {
 			const initRes = await appInit();
 		} catch (err) {
 			console.error("App init error:", err);
 		}
 	} catch (err) {
-		console.error('App starting error:', err);
+		// Fallback error handler — shows a dialog if app fails to start
+		console.error("App starting error:", err);
 		dialog.showErrorBox("Ops, something went wrong", (err as Error).message);
 	}
 });
-
-
-function validateIpcInvokeHandlers() {
-	console.log('[HandlersCheck] _invokeHandlers=', ((ipcMain as any)._invokeHandlers as Map<string, Function>).size)
-	const handlers = (ipcMain as any)._invokeHandlers as Map<string, Function>;
-	if (!handlers) {
-		throw new Error('ipcMain._invokeHandlers not found');
-	}
-
-	allConstantsInvoke.forEach((channel) => {
-		console.log('[HandlersCheck]CID=', channel, handlers.has(channel));
-		if (!handlers.has(channel)) {
-			throw new Error(`Missing ipcMain.handle() for channel: '${channel}'`);
-		}
-	});
-}

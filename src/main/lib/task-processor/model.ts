@@ -1,34 +1,34 @@
-export type TaskPayload = any;
+// export type TaskPayload = any;
 
-export interface TaskEvent {
-	taskId: string;
-	type: 'progress' | 'result' | 'error' | 'cancelled';
-	payload: any;
-}
-
-// export interface TaskParams {
-//   taskId: string;
-//   payload: TaskPayload;
-//   signal: AbortSignal;
-//   emit: (event: TaskEvent) => void;
+// export interface TaskEvent {
+// 	taskId: string;
+// 	type: 'progress' | 'result' | 'error' | 'cancelled';
+// 	payload: any;
 // }
 
-export interface TaskParams {
-	payload: TaskPayload;
-	signal: AbortSignal;
-	emit: EmitFn;
-}
+// // export interface TaskParams {
+// //   taskId: string;
+// //   payload: TaskPayload;
+// //   signal: AbortSignal;
+// //   emit: (event: TaskEvent) => void;
+// // }
 
-export type TaskHandler = (params: TaskParams) => Promise<void>;
+// export interface TaskParams {
+// 	payload: TaskPayload;
+// 	signal: AbortSignal;
+// 	emit: EmitFn;
+// }
 
-export interface RegisteredTask {
-	type: string;
-	handler: TaskHandler;
-	cancellable?: boolean;
-}
+// export type TaskHandler = (params: TaskParams) => Promise<void>;
 
-export interface EmitFn {
-	(event: Omit<TaskEvent, 'taskId'>): void;
-}
+// export interface RegisteredTask {
+// 	type: string;
+// 	handler: TaskHandler;
+// 	cancellable?: boolean;
+// }
 
-export type TaskInput = { type: string; payload: any };
+// export interface EmitFn {
+// 	(event: Omit<TaskEvent, 'taskId'>): void;
+// }
+
+// export type TaskInput = { type: string; payload: any };

@@ -1,5 +1,5 @@
-import { TaskInput } from "../../main/lib/task-processor/model";
 import { MediaFile } from "./media-file";
+import { TaskProc } from "./task-processor";
 
 /**
  * ElectronBridge interface defines the available methods that can be called
@@ -27,7 +27,7 @@ export interface ElectronBridge {
 	 * Run a registered background task by name and payload.
 	 * Returns a unique taskId for tracking.
 	 */
-	runTask(task: TaskInput): Promise<string>;
+	runTask(task: TaskProc.Input): Promise<string>;
 
 	/**
 	 * Abort a running task by taskId (if it is cancellable).
@@ -36,7 +36,7 @@ export interface ElectronBridge {
 
 	// onTaskProcessorEvent: (callback: Function) => void,
 	// offTaskProcessorEvent: () => void,
-	
+
 	onEvent(callback: (payload: any) => void);
 }
 

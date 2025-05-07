@@ -32,7 +32,15 @@
 
 				<!-- Error -->
 				<n-alert v-if="error" type="error" title="Error" :show-icon="true" closable @close="error = null">
-					{{ error }}
+					<!-- If it's an array, render each string inside a <div> -->
+					<template v-if="Array.isArray(error)">
+						<div v-for="(msg, idx) in error" :key="idx">{{ msg }}</div>
+					</template>
+
+					<!-- If it's a single string, render as-is -->
+					<template v-else>
+						{{ error }}
+					</template>
 				</n-alert>
 
 				<!-- Result -->
@@ -72,13 +80,14 @@ import { MediaFile } from '../../shared/types/media-file';
 import MediaFileEditor from './MediaFileEditor.vue';
 import { createMediaFile } from '../model/media-file';
 import { Formatters } from '../lib/utils/formatters';
-import { TaskEvent, TaskInput } from '../../main/lib/task-processor/model';
 import { useTaskProcessor } from '../plugins/task-processor';
 import { useProcessorListener } from '../lib/utils/use-processor-listener';
+import { TaskProc } from '../../shared/types/task-processor';
 const message = useMessage();
 
 const url = ref('');
-const error = ref<string | null>(null);
+const error = ref<string | Array<string | null> | null>(null);
+
 const progress = ref<string | null>(null);
 const loading = ref(false);
 
@@ -87,39 +96,10 @@ const mediaData = ref<MediaFile.Data | null>(null);
 
 const router = useRouter();
 
-// async function getSourceInfo(url: string): Promise<MediaFile.SourceFile> {
-// 	const bridge = useElectronBridge();
-// 	const result = await bridge.getSourceByUrl(url);
-
-// 	if ('type' in result && result.type !== 'video') {
-// 		throw new Error(`Unsupported media type: ${result.type}`);
-// 	}
-
-// 	// now it's safe to assume it's a SourceFile
-// 	return result as MediaFile.SourceFile;
-// }
-
-
-
-// const url = ref('');
-// const error = ref<string | null>(null);
-// const loading = ref(false);
-// const mediaData = ref<MediaFile.Data | null>(null);
-
 const taskIdRef = ref<string | null>(null);
 
 const bridge = useElectronBridge();
 const processor = useTaskProcessor();
-
-// onMounted(() => {
-// 	taskProcessorEventPlugin.setHandler((event) => {
-// 		console.log('[UI] Task Progress:', event);
-// 	});
-// });
-
-// onBeforeUnmount(() => {
-// 	taskProcessorEventPlugin.setHandler(null); // remove handler
-// });
 
 const done = () => {
 	loading.value = false;
@@ -131,12 +111,9 @@ async function handleCancel() {
 	await cancelRequest();
 }
 const cancelRequest = async () => {
-	console.log("Request cancelled");
-	// сбросить прогресс или отменить процесс
-	// progress.value = 0;
 	if (taskIdRef?.value?.length) {
 		const res = await bridge.abortTask(taskIdRef?.value);
-		console.log('[UI][Abort][REQ] id=...' + taskIdRef?.value?.slice(0, -5), res);
+		console.log('[UI][Abort][REQ] id=...' + taskIdRef?.value?.slice(-5), res);
 	}
 }
 
@@ -157,26 +134,18 @@ const handler = async (type, taskEvent) => {
 
 		case 'result':
 			console.log('[Result]', taskEvent.payload);
-			// if (!taskEvent?.payload) {
-			// 	// aborted
-			// 	return done();
-			// }
-
-			// if ('type' in taskEvent.payload && taskEvent.payload.type !== 'video') {
-			// 	showUrlInfoError(taskEvent.payload);
-			// 	break;
-			// }
-
 			const source = taskEvent.payload as MediaFile.SourceFile;
 			const defaultFileName = `${Formatters.sanitizeFileName(source.title)} [${source.extractor}][${source.id}]`;
 			const data = createMediaFile(defaultFileName, [], source);
 			mediaData.value = data;
-
 			done();
 			break;
 
 		case 'error':
-			error.value = 'Failed to fetch media info: ' + (taskEvent.payload?.error || String(taskEvent.payload));
+			error.value = [
+				'Failed to fetch media info:',
+				(taskEvent.payload?.error || String(taskEvent.payload))
+			];
 			done();
 			break;
 
@@ -185,6 +154,10 @@ const handler = async (type, taskEvent) => {
 			// error.value = 'Task was cencelled';
 			done();
 			break;
+
+		default: {
+
+		}
 	}
 };
 useProcessorListener(processor, handler);
@@ -200,7 +173,7 @@ async function checkSource() {
 		// 	console.log('[UI][Abort][REQ] id=...' + taskIdRef?.value?.slice(0, -5), res);
 		// }
 		await cancelRequest();
-		const params: TaskInput = { type: 'analyze-media-info', payload: { url: url.value.trim() } }
+		const params: TaskProc.Input = { type: 'analyze-media-info', payload: { url: url.value.trim() } }
 		const taskId = await bridge.runTask(params);
 
 		console.log('[UI][AddSource][checkSource]', { processor, taskId });
@@ -310,9 +283,14 @@ function showUrlInfoError(info: MediaFile.UrlInfo) {
 		`Entries Count: ${info.count}`,
 	].filter(Boolean).join('\n');
 
-	error.value = `
-    The provided URL is not a valid single media source.\n\n${details}
-  `;
+	error.value = [
+		'The provided URL is not a valid single media source.',
+		info.error ? `Error: ${info.error}` : null,
+		info.title ? `Title: ${info.title}` : null,
+		info.uploader ? `Uploader: ${info.uploader}` : null,
+		`Detected Type: ${info.type}`,
+		`Entries Count: ${info.count}`,
+	].filter(Boolean);
 }
 
 </script>

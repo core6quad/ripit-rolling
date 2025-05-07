@@ -1,16 +1,16 @@
-import { EmitFn, TaskEvent, TaskHandler, TaskInput, TaskPayload } from "./model";
 import { v4 as uuidv4 } from 'uuid';
+import { TaskProc } from '../../../shared/types/task-processor';
 
 export class TaskProcessor {
-	private handlers = new Map<string, TaskHandler>();
+	private handlers = new Map<string, TaskProc.Handler>();
 	private activeControllers = new Map<string, AbortController>();
-	private emitRaw: (event: TaskEvent) => void;
+	private emitRaw: (event: TaskProc.Event) => void;
 
-	constructor(emitFn: (event: TaskEvent) => void) {
+	constructor(emitFn: (event: TaskProc.Event) => void) {
 		this.emitRaw = emitFn;
 	}
 
-	register(type: string, handler: TaskHandler) {
+	register(type: string, handler: TaskProc.Handler) {
 		if (this.handlers.has(type)) {
 			throw new Error(`Handler for type "${type}" already registered`);
 		}
@@ -18,7 +18,7 @@ export class TaskProcessor {
 	}
 
 	// run(type: string, payload: TaskPayload): string {
-	run(task: TaskInput): string {
+	run(task: TaskProc.Input): string {
 		const { type, payload } = task;
 		const taskId = uuidv4();
 		const handler = this.handlers.get(type);
@@ -28,7 +28,7 @@ export class TaskProcessor {
 		this.activeControllers.set(taskId, controller);
 
 		// Wrapped emit that injects taskId automatically
-		const emit: EmitFn = (event) => {
+		const emit: TaskProc.EmitFn = (event) => {
 			this.emitRaw({ ...event, taskId });
 		};
 
