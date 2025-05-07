@@ -5,6 +5,8 @@ import { fileExists } from "./utils/file-checks";
 import { appInit } from "./init/init";
 import { serviceContainer } from "./services/service-container";
 import { allConstantsInvoke } from "../shared/types/ipcConstants";
+import { TaskProcessor } from "./lib/task-processor/task-processor";
+import { analyzeMediaInfoTask } from "./tasks/analyze-media-info-task";
 
 const RIPIT_INDEX_FILE = 'index.html';
 
@@ -21,11 +23,41 @@ app.whenReady().then(async () => {
 				preload: path.join(__dirname, "preload.js"),
 				contextIsolation: true,
 				webSecurity: false,
+				nodeIntegration: false,
 				// enableRemoteModule: false,
 			},
 		});
+		console.log('[Loading] open devTools');
+		mainWindow.webContents.openDevTools({ mode: 'right' });
 
 		console.log('[Loading] mainWindow created');
+
+		// Initialize TaskProcessor after mainWindow is ready
+		const taskProcessor = new TaskProcessor((event) => {
+			// Send event updates back to the renderer process
+			// console.log('[TaskProcessor][emit]:', event);
+			mainWindow.webContents.send('CID_ON_TASK_PROCESSOR_EVENT', event);
+		});
+
+		// Register supported task types
+		// taskProcessor.register('download', exampleDownloadTask);
+		taskProcessor.register('analyze-media-info', analyzeMediaInfoTask);
+
+		ipcMain.handle('CID_RUN_TASK', async (event, task: { type: string; payload: any }) => {
+			const { type, payload } = task;
+			try {
+				const taskId = taskProcessor.run(task);
+				return taskId;
+			} catch (err) {
+				console.error(`Failed to start task of type "${type}"`, err);
+				throw err; // will be catched on UI side
+			}
+		});
+
+		ipcMain.handle('CID_ABORT_TASK', async (event, taskId: string) => {
+			const success = taskProcessor.abort(taskId);
+			return { success };
+		});
 
 		// services init
 		serviceContainer.registerCoreServices(() => mainWindow)
@@ -40,9 +72,6 @@ app.whenReady().then(async () => {
 
 		console.log('[Loading] index file:', indexFile);
 		mainWindow.loadFile(indexFile);
-
-		console.log('[Loading] open devTools');
-		mainWindow.webContents.openDevTools({ mode: 'right' });
 
 		contextMenu({
 			showSaveImageAs: true,
