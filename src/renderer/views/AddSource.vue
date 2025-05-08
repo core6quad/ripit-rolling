@@ -16,16 +16,35 @@
 					</n-button>
 				</n-input-group>
 
+				<!-- Info/Progress -->
+				<n-alert v-if="progress" type="success" title="Request is being processed..." :show-icon="true"
+					@close="progress = null">
+					<div class="alert-content">
+						<div>
+							<p>{{ progress }}</p>
+							<!-- <n-progress type="line" :percentage="progress" :show-indicator="false" status="success" /> -->
+						</div>
+						<n-button text type="error" class="cancel-button" @click="handleCancel">
+							Cancel request
+						</n-button>
+					</div>
+				</n-alert>
+
 				<!-- Error -->
 				<n-alert v-if="error" type="error" title="Error" :show-icon="true" closable @close="error = null">
-					{{ error }}
+					<!-- If it's an array, render each string inside a <div> -->
+					<template v-if="Array.isArray(error)">
+						<div v-for="(msg, idx) in error" :key="idx">{{ msg }}</div>
+					</template>
+
+					<!-- If it's a single string, render as-is -->
+					<template v-else>
+						{{ error }}
+					</template>
 				</n-alert>
 
 				<!-- Result -->
 				<div class="source-info">
-					<!-- <template v-if="mediaData">
-						<media-file-editor :data="mediaData" :isNew="true" @save="handleSaveData" />
-					</template> -->
 					<template v-if="mediaData">
 						<!-- Media File Editor -->
 						<media-file-editor :data="mediaData" :isNew="true" @save="handleSaveData" />
@@ -40,7 +59,7 @@
 </template>
 
 <script setup lang="ts">
-import { Ref, ref } from 'vue';
+import { onBeforeUnmount, onMounted, Ref, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import {
 	NInput,
@@ -61,12 +80,15 @@ import { MediaFile } from '../../shared/types/media-file';
 import MediaFileEditor from './MediaFileEditor.vue';
 import { createMediaFile } from '../model/media-file';
 import { Formatters } from '../lib/utils/formatters';
-// import { mockedSource } from './mock';
-// import { mock2 } from './mock2';
+import { useTaskProcessor } from '../plugins/task-processor';
+import { useProcessorListener } from '../lib/utils/use-processor-listener';
+import { TaskProc } from '../../shared/types/task-processor';
 const message = useMessage();
 
 const url = ref('');
-const error = ref<string | null>(null);
+const error = ref<string | Array<string | null> | null>(null);
+
+const progress = ref<string | null>(null);
 const loading = ref(false);
 
 // Final editable media data
@@ -74,17 +96,97 @@ const mediaData = ref<MediaFile.Data | null>(null);
 
 const router = useRouter();
 
-// async function getSourceInfo(url: string): Promise<MediaFile.SourceFile> {
-// 	const bridge = useElectronBridge();
-// 	const result = await bridge.getSourceByUrl(url);
+const taskIdRef = ref<string | null>(null);
 
-// 	if ('type' in result && result.type !== 'video') {
-// 		throw new Error(`Unsupported media type: ${result.type}`);
-// 	}
+const bridge = useElectronBridge();
+const processor = useTaskProcessor();
 
-// 	// now it's safe to assume it's a SourceFile
-// 	return result as MediaFile.SourceFile;
-// }
+const done = () => {
+	loading.value = false;
+	taskIdRef.value = null;
+	progress.value = null;
+}
+
+async function handleCancel() {
+	await cancelRequest();
+}
+const cancelRequest = async () => {
+	if (taskIdRef?.value?.length) {
+		const res = await bridge.abortTask(taskIdRef?.value);
+		console.log('[UI][Abort][REQ] id=...' + taskIdRef?.value?.slice(-5), res);
+	}
+}
+
+const handler = async (type, taskEvent) => {
+	// const { taskId, type, payload } = taskEvent;
+	console.log('[UI][AddSource][RESP]', { taskEvent, type, taskId: taskIdRef?.value });
+	// skip other receivers events
+	if (taskIdRef?.value?.length && taskEvent?.taskId !== taskIdRef.value) return;
+
+	switch (taskEvent.type) {
+		case 'progress':
+			// console.log('[Progress]', taskEvent.payload);
+			if ('string' === typeof taskEvent.payload) {
+				console.log('[Progress]', taskEvent.payload);
+				progress.value = taskEvent.payload;
+			}
+			break;
+
+		case 'result':
+			console.log('[Result]', taskEvent.payload);
+			const source = taskEvent.payload as MediaFile.SourceFile;
+			const defaultFileName = `${Formatters.sanitizeFileName(source.title)} [${source.extractor}][${source.id}]`;
+			const data = createMediaFile(defaultFileName, [], source);
+			mediaData.value = data;
+			done();
+			break;
+
+		case 'error':
+			error.value = [
+				'Failed to fetch media info:',
+				(taskEvent.payload?.error || String(taskEvent.payload))
+			];
+			done();
+			break;
+
+		case 'cancelled':
+			console.log('[Task Cancelled]');
+			// error.value = 'Task was cencelled';
+			done();
+			break;
+
+		default: {
+
+		}
+	}
+};
+useProcessorListener(processor, handler);
+
+async function checkSource() {
+	error.value = null;
+	mediaData.value = null;
+	loading.value = true;
+
+	try {
+		// if (taskIdRef?.value?.length) {
+		// 	const res = await bridge.abortTask(taskIdRef?.value);
+		// 	console.log('[UI][Abort][REQ] id=...' + taskIdRef?.value?.slice(0, -5), res);
+		// }
+		await cancelRequest();
+		const params: TaskProc.Input = { type: 'analyze-media-info', payload: { url: url.value.trim() } }
+		const taskId = await bridge.runTask(params);
+
+		console.log('[UI][AddSource][checkSource]', { processor, taskId });
+		progress.value = 'Step 1/2. Detecting media type...';
+		taskIdRef.value = taskId;
+
+	} catch (err: any) {
+		error.value = 'Failed to start task: ' + err.message;
+	} finally {
+		// loading.value = false;
+		// taskIdRef.value = null;
+	}
+}
 
 /**
  * Gets media source info from backend.
@@ -105,7 +207,7 @@ async function getSourceInfo(url: string): Promise<MediaFile.SourceFile | null> 
 }
 
 
-async function checkSource() {
+async function checkSource_() {
 	error.value = null;
 	mediaData.value = null;
 	loading.value = true;
@@ -181,9 +283,14 @@ function showUrlInfoError(info: MediaFile.UrlInfo) {
 		`Entries Count: ${info.count}`,
 	].filter(Boolean).join('\n');
 
-	error.value = `
-    The provided URL is not a valid single media source.\n\n${details}
-  `;
+	error.value = [
+		'The provided URL is not a valid single media source.',
+		info.error ? `Error: ${info.error}` : null,
+		info.title ? `Title: ${info.title}` : null,
+		info.uploader ? `Uploader: ${info.uploader}` : null,
+		`Detected Type: ${info.type}`,
+		`Entries Count: ${info.count}`,
+	].filter(Boolean);
 }
 
 </script>
@@ -197,5 +304,16 @@ function showUrlInfoError(info: MediaFile.UrlInfo) {
 
 .source-info {
 	margin-top: 24px;
+}
+
+.alert-content {
+	display: flex;
+	justify-content: space-between;
+	align-items: flex-end;
+	gap: 16px;
+}
+
+.cancel-button {
+	white-space: nowrap;
 }
 </style>

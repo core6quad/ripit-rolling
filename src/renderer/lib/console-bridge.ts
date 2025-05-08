@@ -15,10 +15,7 @@
  * 
  */
 
-import { onMounted } from "vue";
 import { useElectronBridge } from "../plugins/electron-bridge";
-import { ipcRenderer } from "electron";
-import { nextTick } from "vue";
 import { RIPIT_BRIDGE_NAME } from '../../shared/types/ipcConstants';
 
 export function attachMainConsoleToRenderer(): void {
