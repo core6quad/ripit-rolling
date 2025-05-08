@@ -1,5 +1,6 @@
 node_modules
 dist/*
+release-builds/*
 info
 .vscode
 .DS_Store
