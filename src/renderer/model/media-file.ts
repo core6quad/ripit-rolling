@@ -1,7 +1,7 @@
 import { MediaFile } from "../../shared/types/media-file";
 
 import { v4 as uuidv4 } from 'uuid';
-import { cloneDeep } from 'lodash';
+import { cloneDeep } from 'lodash-es';
 import { YDU } from "./constants";
 
 export function createMediaFile(
