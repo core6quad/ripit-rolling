@@ -21,16 +21,14 @@
 		"@vitejs/plugin-vue": "^5.2.3",
 		"@vue/cli-service": "^3.3.1",
 		"@vue/compiler-sfc": "^3.5.13",
-		"electron": "^35.1.5",
+		"electron": "^36.2.0",
 		"electron-builder": "^26.0.12",
 		"typescript": "^5.8.3",
 		"vite": "^6.2.6",
 		"vue": "^3.5.13",
 		"naive-ui": "^2.41.0",
 		"vue-router": "^4.5.0",
-		"electron-context-menu": "^4.0.5",
 		"@vicons/ionicons5": "^0.13.0",
-		"lodash": "^4.17.21",
 		"filesize": "^10.1.6",
 		"mitt": "^3.0.1",
 		"zod": "3.24.3"
@@ -70,16 +68,12 @@
 				"to": "node_modules/uuid"
 			},
 			{
-				"from": "node_modules/electron-context-menu",
-				"to": "node_modules/electron-context-menu"
-			},
-			{
 				"from": "node_modules/extract-zip",
 				"to": "node_modules/extract-zip"
 			},
 			{
-				"from": "node_modules/lodash",
-				"to": "node_modules/lodash"
+				"from": "node_modules/lodash-es",
+				"to": "node_modules/lodash-es"
 			},
 			{
 				"from": "node_modules/filesize",
@@ -97,9 +91,8 @@
 	},
 	"dependencies": {
 		"electron-dl": "^4.0.0",
-		"electron-context-menu": "^4.0.5",
 		"extract-zip": "^2.0.1",
-		"lodash": "^4.17.21",
+		"lodash-es": "^4.17.21",
 		"filesize": "^10.1.6",
 		"mitt": "^3.0.1",
 		"zod": "3.24.3"

@@ -1,6 +1,6 @@
 import { app, BrowserWindow, ipcMain, dialog } from "electron";
 import * as path from "path";
-import contextMenu from "electron-context-menu";
+// import contextMenu from "electron-context-menu";
 import { fileExists } from "./utils/file-checks";
 import { appInit } from "./init/init";
 import { serviceContainer } from "./services/service-container";
@@ -79,11 +79,11 @@ app.whenReady().then(async () => {
 		mainWindow.loadFile(indexFile);
 
 		// Enable right-click context menu with useful options
-		contextMenu({
-			showSaveImageAs: true,
-			showCopyImage: true,
-			showInspectElement: true,
-		});
+		// contextMenu({
+		// 	showSaveImageAs: true,
+		// 	showCopyImage: true,
+		// 	showInspectElement: true,
+		// });
 
 		// Initialize custom services
 		console.log("[Loading][ytdlpService] run");
